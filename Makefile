@@ -159,6 +159,7 @@ install:
 	install lib/setup-storage/* $(SHAREDIR)/setup-storage
 	cd bin ; install $(USRSBIN_SCRIPTS) $(DESTDIR)/usr/sbin
 	cd bin ; install $(USRBIN_SCRIPTS) $(DESTDIR)/usr/bin
+	ln -s faireboot $(DESTDIR)/usr/sbin/faipoweroff
 	install bin/dhclient-fai-script  $(DESTDIR)/usr/share/fai
 	install -m644 conf/dhclient-fai.conf $(DESTDIR)/usr/share/fai
 	install -m644 conf/apt.conf $(DESTDIR)/etc/apt/apt.conf.d/90fai
