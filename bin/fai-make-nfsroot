@@ -390,8 +390,14 @@ EOF
 
     add_etc_hosts_entries
 
+    local iarch=$($ROOTCMD dpkg --print-architecture|tr /a-z/ /A-Z/)
+    export classes="NFSROOT $iarch"
+    if [ -r "$cfdir/NFSROOT.debconf" ]; then
+        fai-debconf $v $cfdir
+    fi
+
     [ "$verbose" ] && echo "Upgrading $NFSROOT"
-    LC_ALL=C call_verbose upgrade_nfsroot
+    LC_ALL=C call_verbose upgrade_nfsroot  
 
     # overwrite default live.conf
     [ -f $cfdir/live.conf ] || die 1 "$cfdir/live.conf not found."
@@ -454,11 +460,11 @@ add_packages_nfsroot() {
 
     local iarch=$($ROOTCMD dpkg --print-architecture|tr /a-z/ /A-Z/)
     export FAI_ROOT=$NFSROOT
-    export classes="NFSROOT $iarch"
+    export LOGDIR=$NFSROOT/var/tmp
 
-    install_packages -l -p$cfdir > $NFSROOT/var/tmp/packages.nfsroot
+    install_packages -l -p$cfdir > $LOGDIR/packages.nfsroot
     echo "Adding additional packages to $NFSROOT:"
-    cat $NFSROOT/var/tmp/packages.nfsroot
+    cat $LOGDIR/packages.nfsroot
     call_verbose install_packages -N $v -p$cfdir
     echo "install_packages exit code: $?"
 }
@@ -527,10 +533,15 @@ trap "bad_exit" ERR
     exit
 }
 
-# just install a new kernel to the nfsroot
+# just update the nfsroot from class
 [ -n "$kinstall" ] && {
     trap "true" EXIT
     echo "Upgrading nfsroot and installing new packages into the nfsroot."
+    iarch=$($ROOTCMD dpkg --print-architecture|tr /a-z/ /A-Z/)
+    export classes="NFSROOT $iarch"
+    if [ -r "$cfdir/NFSROOT.debconf" ]; then
+        fai-debconf $v $cfdir
+    fi
     $ROOTCMD apt-get update
     $ROOTCMD apt-get -y dist-upgrade
     LC_ALL=C add_packages_nfsroot
