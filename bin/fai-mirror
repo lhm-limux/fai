@@ -207,11 +207,7 @@ set_cfdir "$cfdir"
 [ "$verbose" -eq 1 ] && echo "Using configuration files from $cfdir"
 # read config files for this tool
 read_cfg "fai.conf" "nfsroot.conf"
-
-if [ -d $NFSROOT/live/filesystem.dir ]; then
-    NFSROOT=$NFSROOT/live/filesystem.dir
-fi
-export NFSROOT
+export NFSROOT="$NFSROOT/${NFSROOT_ROOTDIR}"
 
 [ -n "$packages" ] && die "WARNING: The use of \$packages in nfsroot.conf is now deprecated. Please include this information into $cfdir/NFSROOT."
 [ -n "$NFSROOT_PACKAGES" ] && die "WARNING: The use of \$packages in nfsroot.conf is now deprecated. Please include this information into $cfdir/NFSROOT."
