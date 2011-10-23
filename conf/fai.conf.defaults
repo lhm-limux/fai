@@ -2,5 +2,6 @@
 # Please keep sorted.
 : ${FAI_ABORT:=reboot}
 : ${FAI_LOGPROTO:=ssh}
+: ${FAI_MONITOR_SEND_ID:=host}
 : ${FAI:=/var/lib/fai/config}
 : ${MNTPOINT:=/media/mirror}
