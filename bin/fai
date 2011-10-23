@@ -37,6 +37,7 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/lib/fai:/usr/sbin:/usr/bin:/sbin
 export FAI_VERSION=FAIVERSIONSTRING
 stamp=/var/run/fai/FAI_INSTALLATION_IN_PROGRESS
 export romountopt="-o async,noatime,nolock,ro,actimeo=1800"
+export FAI_ABORT="reboot"
 
 export STOP_ON_ERROR=700
 export FAI_DIE_SLEEPING
@@ -86,7 +87,11 @@ fai_init() {
     AINSL_TARGET=$FAI_ROOT
 
     if [ $do_init_tasks -eq 1 ]; then
-        trap 'echo "Now rebooting";faireboot' INT QUIT
+        if [ "$FAI_ABORT" != "poweroff" ]; then
+            trap 'echo "Now rebooting";faireboot' INT QUIT
+        else
+            trap 'echo "Now powering off";faipoweroff' INT QUIT
+        fi
     else
         trap "echo 'Aborted';rm -f $stamp" INT QUIT
     fi

@@ -9,5 +9,6 @@ usr/lib/fai/load_keymap_consolechars
 usr/lib/fai/mount2dir
 usr/lib/fai/task_sysinfo
 usr/sbin/faireboot
+usr/sbin/faipoweroff
 usr/share/fai/dhclient-fai.conf
 usr/share/fai/dhclient-fai-script
