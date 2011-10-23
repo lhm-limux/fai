@@ -1,5 +1,6 @@
 # Default values for fai.conf
 # Please keep sorted.
+: ${FAI_ABORT:=reboot}
 : ${FAI_LOGPROTO:=ssh}
 : ${FAI:=/var/lib/fai/config}
 : ${MNTPOINT:=/media/mirror}
