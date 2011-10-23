@@ -34,7 +34,7 @@
 die() {
 
     # echo comment and exit installation
-    task_savelog
+    task savelog
     echo "$@"
     if [ X$FAI_ACTION = Xinstall ]; then
         exec bash -i
@@ -156,14 +156,14 @@ wait_for_jobs() {
 stop_fai_installation() {
 
     # this subroutine should directly stop the installation process
-    sendmon "TASKEND $taskname $task_error"
+    sendmon "TASKEND $taskname $task_error_code"
     echo "Error in task $taskname. Traceback: $task_error_func" >&2
     die "FATAL ERROR. Installation stopped."
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### BEGIN SUBROUTINE INFO
-# Provides-Var:      $task_error
-# Required-Var:      $1 $2 $task_error
+# Provides-Var:      $task_error_code
+# Required-Var:      $1 $2 $task_error_code
 # Short-Description: save the maximum error code,
 # Short-Description: $1 is the error that will be saved unless $2 is zero
 ### END SUBROUTINE INFO
@@ -172,12 +172,12 @@ task_error() {
 
     [ X$2 = X0 ] && return
     task_error_func=${FUNCNAME[*]}
-    [ $1 -gt $task_error ] && task_error=$1
-    [ $task_error -gt $STOP_ON_ERROR ] && stop_fai_installation
+    [ $1 -gt $task_error_code ] && task_error_code=$1
+    [ $task_error_code -gt $STOP_ON_ERROR ] && stop_fai_installation
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### BEGIN SUBROUTINE INFO
-# Provides-Var:      $task_error
+# Provides-Var:      $task_error_code
 # Required-Var:      $LOGDIR
 # Short-Description: call a certain task
 ### END SUBROUTINE INFO
@@ -201,12 +201,12 @@ task() {
     else
         echo "Calling task_$taskname"
         sendmon "TASKBEGIN $taskname"
-        task_error=0   # task can set this variable to indicate an error
+        task_error_code=0   # task can set this variable to indicate an error
         task_error_func=''
         task_$taskname "$@"
-        sendmon "TASKEND $taskname $task_error"
-        if [ "$task_error" -ne 0 ] ; then
-          echo "Exit code task_$taskname: $task_error" >&2
+        sendmon "TASKEND $taskname $task_error_code"
+        if [ "$task_error_code" -ne 0 ] ; then
+            echo "Exit code task_$taskname: $task_error_code" >&2
         fi
     fi
 }
@@ -462,14 +462,14 @@ task_mountdisks() {
     mount2dir $FAI_ROOT $LOGDIR/fstab
     if [ "$?" -ne 0 ]; then
         sendmon "TASKERROR mountdisks 885"
-        task_error 885
+        task error 885
     fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 task_configure() {
 
     fai-do-scripts $FAI/scripts
-    task_error 420 $?
+    task error 420 $?
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 task_tests() {
@@ -480,7 +480,7 @@ task_tests() {
         if [ -f $LOGDIR/test.log ]; then
             if grep -q "FAILED with " $LOGDIR/test.log; then
                 sendmon "TASKERROR tests 312"
-                task_error 312
+                task error 312
                 return 1
             fi
         fi
@@ -817,9 +817,9 @@ task_partition() {
 
     # partitioning tool must create $LOGDIR/disk_var.sh file
     if [ ! -s $LOGDIR/disk_var.sh ]; then
-        task_error 710
         cat $LOGDIR/format.log
         sendmon "TASKERROR partition 21"
+        task error 710
         die "Partitioning tool did not create $LOGDIR/disk_var.sh file."
     fi
     # now define variable for root and boot partition and boot device
@@ -872,7 +872,7 @@ task_extrbase() {
             echo "No base file found. Calling debootstrap."
             [ -z "$FAI_DEBOOTSTRAP" ] && die "$FAI_DEBOOTSTRAP undefined. Aborting"
             call_debootstrap $FAI_DEBOOTSTRAP
-            task_error 801 $?
+            task error 801 $?
         fi
     fi
     # now we can copy fstab
@@ -908,7 +908,7 @@ task_debconf () {
 
     if [ ! -d $FAI/debconf ]; then
         echo "Can't find debconf directory $FAI/debconf. Skipping preseeding."
-        task_error 2
+        task error 2
         return
     fi
     fai-debconf $FAI/debconf
@@ -1002,10 +1002,10 @@ task_updatebase() {
 
     if [ "$verbose" ]; then
         updatebase </dev/null 2>&1 | tee -a $LOGDIR/software.log
-        task_error 474 ${PIPESTATUS[0]}
+        task error 474 ${PIPESTATUS[0]}
     else
         updatebase </dev/null >> $LOGDIR/software.log 2>&1
-        task_error 474 $?
+        task error 474 $?
     fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1014,18 +1014,18 @@ task_instsoft() {
     echo "Installing software may take a while"
     if [ "$debug" ]; then
         install_packages | tee -a $LOGDIR/software.log
-        task_error 471 ${PIPESTATUS[0]}
+        task error 471 ${PIPESTATUS[0]}
     elif [ "$verbose" ]; then
         install_packages </dev/null 2>&1 | tee -a $LOGDIR/software.log
-        task_error 471 ${PIPESTATUS[0]}
+        task error 471 ${PIPESTATUS[0]}
     else
         install_packages </dev/null >> $LOGDIR/software.log 2>&1
-        task_error 471 $?
+        task error 471 $?
     fi
     # This almost indicates an error
-    egrep "^E:" $LOGDIR/software.log && task_error 472
-    grep "Couldn't find any package whose name or description matched" $LOGDIR/software.log && task_error 321
-    grep -q "E: Sub-process /usr/bin/dpkg returned an error code" $LOGDIR/software.log && task_error 620
+    egrep "^E:" $LOGDIR/software.log && task error 472
+    grep "Couldn't find any package whose name or description matched" $LOGDIR/software.log && task error 321
+    grep -q "E: Sub-process /usr/bin/dpkg returned an error code" $LOGDIR/software.log && task error 620
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 task_finish() {
@@ -1067,7 +1067,7 @@ task_chboot() {
 
     if [ -z "$SERVER" ] ; then
         echo "SERVER not defined. Can't change network boot configuration"
-        task_error 2
+        task error 2
         doexit=1
     fi
     [ $doexit -eq 1 ] && return
@@ -1076,7 +1076,7 @@ task_chboot() {
     # first test if rsh to server works
     $frsh true >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        task_error 3
+        task error 3
         echo "WARNING: $frsh failed. Can't call fai-chboot on the install server." >&2
     else
         if [ -n "$nexttest" ]; then

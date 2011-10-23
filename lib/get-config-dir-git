@@ -44,18 +44,18 @@ if [ -d "$GIT_DIR" ]; then
     if [ `git remote show -n origin | egrep -m1 -o '[^[:space:]]+://.+'` == "$giturl" ]; then
         echo "Updating git copy in $FAI"
         git fetch
-        task_error 881 $?
+        task error 881 $?
         _git_checkout
     else
         echo "$FAI already contains a git repository, but it is not from $giturl!" >&2
         echo "Please delete $FAI manually. Aborting..." >&2
-        task_error 883
+        task error 883
     fi
 else
    echo "Checking out from git"
    # cloning into an existing directory is not allowed
    [ -d $FAI ] && rm -rf $FAI
    git clone --branch "$gitbranch" "$giturl" $FAI
-   task_error 882 $?
+   task error 882 $?
     _git_checkout
 fi
