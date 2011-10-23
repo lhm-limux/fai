@@ -35,11 +35,15 @@ call_conf() {
     local class f
     cd $debconfdir
     for class in $classes ; do
-        [ -f $class ] && add_data $class
+        if [ -f $class.debconf ]; then
+            add_data $class.debconf
+        else
+            [ -f $class ] && add_data $class
+        fi
         if [ -d $class ]; then
-           for f in $(ls $class/* | egrep '^[[:alnum:]/_.-]+$') ; do
-               [ -f $f ] && add_data $f
-           done
+            for f in $(ls $class/* | egrep '^[[:alnum:]/_.-]+$') ; do
+                [ -r $f ] && add_data $f
+            done
         fi
     done
 }
