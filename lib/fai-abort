@@ -22,4 +22,8 @@ echo or after a logout
 bash
 cd /
 umount -ar
-reboot -dfi
+if [ "$flag_poweroff" -lt "1" ]; then
+  reboot -dfi
+else
+  poweroff -dfi
+fi
