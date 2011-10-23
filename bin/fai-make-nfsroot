@@ -57,12 +57,8 @@ check_nfsroot() {
 
     set +e
     # simple test, to see if important thing are available inside the nfsroot
-    if [ ! -x $NFSROOT/usr/share/initramfs-tools/scripts/live  -a ! $NFSROOT/usr/sbin/dracut ]; then
-        die 1 "Neither live-boot nor dracut was installed into the nfsroot."
-    fi
-
-    if [ -f $oldnfsroot/usr/share/initramfs-tools/scripts/live ]; then
-        echo "When using live-boot instead of dracut inside the nfsroot, please use fai-make-nfsroot -l." >&2
+    if [ "$NFSROOT_ROOTDIR" = "/live/filesystem.dir" ]; then
+        [ -x $NFSROOT/usr/share/initramfs-tools/scripts/live ] || die 1 "live-boot was not installed inside the nfsroot."
     fi
 
     echo "FAI packages inside the nfsroot:"
@@ -95,7 +91,6 @@ sshpreserve=0
 adjust=0
 generic=0
 force=0
-live=0   # default is to generate nfsroot for dracut
 
 callname=${0##*/}
 if [ $callname = make-fai-nfsroot ]; then
@@ -104,7 +99,7 @@ if [ $callname = make-fai-nfsroot ]; then
 fi
 
 # option e currently does nothing
-while getopts aghervC:B:fkKlpU opt ; do
+while getopts aghervC:B:fkKpU opt ; do
     case "$opt" in
         a) adjust=1 ;;
         g) generic=1 ;;
@@ -116,7 +111,6 @@ while getopts aghervC:B:fkKlpU opt ; do
         f) force=1 ;;
         k) kinstall=1 ;;
         K) kremove=1;;
-        l) live=1 ;;
         h) usage ;;
         e) expert=1 ;; # a dummy option, that only fai-setup uses
         p) sshpreserve=1 ;;
@@ -149,17 +143,7 @@ read_cfg "fai.conf" "nfsroot.conf"
 [ ! -d "$cfdir/apt" ] && die 1 "$cfdir/apt/ does not exists. Can't continue."
 [ -n "$FAI_BOOT" ] && die 1 "Variable \$FAI_BOOT is not supported any more. Will only set up TFTP environment."
 
-oldnfsroot=$NFSROOT
-
-if [ $live -eq 1 ]; then
-    # live-boot
-    deldir=$NFSROOT # save it before redefining, this will be deleted
-    NFSROOT="$NFSROOT/live/filesystem.dir"
-else
-    # dracut
-    deldir=$NFSROOT
-fi
-
+NFSROOT=$(readlink -f "${NFSROOT}/${NFSROOT_ROOTDIR}")
 ROOTCMD="chroot $NFSROOT"
 export DEBIAN_FRONTEND=noninteractive
 
@@ -400,8 +384,10 @@ EOF
     LC_ALL=C call_verbose upgrade_nfsroot  
 
     # overwrite default live.conf
-    [ -f $cfdir/live.conf ] || die 1 "$cfdir/live.conf not found."
-    cp -Lp $cfdir/live.conf etc/live.conf
+    if [ "$NFSROOT_ROOTDIR" = "/live/filesystem.dir" ]; then
+        [ -f $cfdir/live.conf ] || die 1 "$cfdir/live.conf not found."
+        cp -Lp $cfdir/live.conf etc/live.conf
+    fi
 
     LC_ALL=C add_packages_nfsroot
     copy_fai_files
@@ -586,9 +572,17 @@ if [ -d $NFSROOT/proc ]; then
     [ -L $NFSROOT/proc/self ] && umount $NFSROOT/proc || true
     [ -L $NFSROOT/proc/self ] && die 1 "/proc is still mounted inside the nfsroot."
     umount $NFSROOT/$MNTPOINT  2>/dev/null || true # it's safer to try to umount
-    # remove old nfsroot using a background process
-    mv $deldir $deldir/../.will-now-be-deleted
-    nice rm -rf $deldir/../.will-now-be-deleted &
+
+    oldnfsroot="$(dirname $NFSROOT)/$(basename $NFSROOT).will-now-be-deleted"
+    if mv $NFSROOT $oldnfsroot
+    then
+        # remove old nfsroot using a background process
+        mkdir $NFSROOT
+        nice rm -rf $oldnfsroot &
+    else
+        rm -rf $NFSROOT
+        mkdir $NFSROOT
+    fi
 fi
 
 create_nfsroot

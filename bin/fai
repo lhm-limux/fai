@@ -256,7 +256,7 @@ if [ X$action = Xdirinstall ]; then
 
     (
       read_cfg "${FAI_ETC_DIR}" "nfsroot.conf"
-      export NFSROOT FAI_DEBOOTSTRAP FAI_DEBOOTSTRAP_OPTS
+      export NFSROOT NFSROOT_ROOTDIR FAI_DEBOOTSTRAP FAI_DEBOOTSTRAP_OPTS
     )
 fi
 
