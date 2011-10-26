@@ -5,14 +5,87 @@ DESTDIR=$(shell pwd)/debian/tmp
 export DOCDIR = $(shell pwd)/debian/fai-doc/usr/share/doc/fai-doc
 LIBDIR = $(DESTDIR)/usr/lib/fai
 SHAREDIR = $(DESTDIR)/usr/share/fai
-USRSBIN_SCRIPTS = fai-make-nfsroot fai-setup fcopy ftar install_packages fai-chboot fai-monitor fai-cd fai faireboot fai-statoverride setup-storage dhcp-edit fai-nfsroot2image fai-new-mac
 
-USRBIN_SCRIPTS = fai-class fai-do-scripts fai-mirror fai-debconf device2grub policy-rc.d.fai ainsl fai-monitor-gui fai-deps
+# for install
+USRSBIN_SCRIPTS = \
+	dhcp-edit \
+	fai \
+	fai-cd \
+	fai-chboot \
+	fai-make-nfsroot \
+	fai-monitor \
+	fai-new-mac \
+	fai-nfsroot2image \
+	faireboot \
+	fai-setup \
+	fai-statoverride \
+	fcopy \
+	ftar \
+	install_packages \
+	setup-storage
+
+USRBIN_SCRIPTS = \
+	ainsl \
+	device2grub \
+	fai-class \
+	fai-debconf \
+	fai-deps \
+	fai-do-scripts \
+	fai-mirror \
+	fai-monitor-gui \
+	policy-rc.d.fai
 
 # for syntax checks
-BASH_SCRIPTS = lib/fai-divert lib/fai-mount-disk lib/fai-savelog lib/fai-vol_id lib/get-boot-info lib/get-config-dir lib/get-config-dir-cvs lib/get-config-dir-file lib/get-config-dir-git lib/get-config-dir-hg lib/get-config-dir-nfs lib/get-config-dir-svn lib/mkramdisk lib/mount2dir lib/prcopyleft lib/subroutines lib/task_sysinfo lib/updatebase lib/fetch-basefile
-SHELL_SCRIPTS = lib/check_status lib/create_resolv_conf lib/updatebase lib/fai-abort lib/fai-divert lib/load_keymap_consolechars lib/fai-disk-info lib/list_disks utils/mkdebmirror bin/policy-rc.d.fai bin/dhclient-fai-script
-PERL_SCRIPTS = lib/setup-storage/*.pm bin/ainsl bin/device2grub bin/dhcp-edit bin/fai-chboot bin/fai-monitor bin/fai-monitor-gui bin/fcopy bin/install_packages bin/setup-storage examples/simple/tests/Faitest.pm lib/dhclient-perl lib/fai-savelog-ftp bin/fai-new-mac
+BASH_SCRIPTS = \
+	lib/fai-divert \
+	lib/fai-mount-disk \
+	lib/fai-savelog \
+	lib/fai-vol_id \
+	lib/fetch-basefile \
+	lib/get-boot-info \
+	lib/get-config-dir \
+	lib/get-config-dir-cvs \
+	lib/get-config-dir-file \
+	lib/get-config-dir-git \
+	lib/get-config-dir-hg \
+	lib/get-config-dir-nfs \
+	lib/get-config-dir-svn \
+	lib/mkramdisk \
+	lib/mount2dir \
+	lib/prcopyleft \
+	lib/subroutines \
+	lib/task_sysinfo \
+	lib/updatebase
+
+SHELL_SCRIPTS = \
+	bin/dhclient-fai-script \
+	bin/policy-rc.d.fai \
+	lib/check_status \
+	lib/create_resolv_conf \
+	lib/fai-abort \
+	lib/fai-disk-info \
+	lib/fai-divert \
+	lib/list_disks \
+	lib/load_keymap_consolechars \
+	lib/updatebase \
+	utils/mkdebmirror
+
+PERL_SCRIPTS = \
+	bin/ainsl \
+	bin/device2grub \
+	bin/dhcp-edit \
+	bin/fai-chboot \
+	bin/fai-deps \
+	bin/fai-monitor \
+	bin/fai-monitor-gui \
+	bin/fai-new-mac \
+	bin/fcopy \
+	bin/install_packages \
+	bin/setup-storage \
+	examples/simple/tests/Faitest.pm \
+	lib/dhclient-perl \
+	lib/fai-savelog-ftp \
+	lib/setup-storage/*.pm
 
 # do not include .svn dir and setup-storage subdir
 libfiles=$(patsubst lib/setup-storage,,$(wildcard lib/[a-z]*))
