@@ -28,6 +28,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 #*********************************************************************
 
+. /usr/lib/fai/subroutines-tools
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 usage() {
 
@@ -127,14 +129,8 @@ done
 set -e
 shopt -s nullglob
 
-# use FAI_ETC_DIR from environment variable
-if [ -n "$FAI_ETC_DIR" -a -z "$cfdir" ]; then
-    echo "Using environment variable \$FAI_ETC_DIR."
-fi
-[ -z "$cfdir" ] && cfdir=${FAI_ETC_DIR:=/etc/fai}
-cfdir=$(readlink -f $cfdir) # canonicalize path
-[ ! -d "$cfdir" ] && die 6 "$cfdir is not a directory"
-
+# get configuration directory
+set_cfdir "$cfdir"
 [ "$verbose" ] && echo "Using configuration files from $cfdir"
 . $cfdir/fai.conf
 : ${FAI:=/var/lib/fai/config} # default value

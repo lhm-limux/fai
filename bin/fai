@@ -30,6 +30,8 @@
 
 #set -xv # for full debugging
 
+. /usr/lib/fai/subroutines-tools
+
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/lib/fai:/usr/sbin:/usr/bin:/sbin:/bin
 # some variables
 export FAI_VERSION=FAIVERSIONSTRING
@@ -39,6 +41,7 @@ export romountopt="-o async,noatime,nolock,ro,actimeo=1800"
 export STOP_ON_ERROR=700
 export faimond=0
 export renewclass=0
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fai_init() {
 
@@ -212,16 +215,10 @@ while true ; do
     esac
 done
 
-# use FAI_ETC_DIR from environment variable
-if [ -n "$FAI_ETC_DIR" -a -z "$cfdir" ]; then
-    # print this message later so it gets into the log files
-    etc_message="Using environment variable \$FAI_ETC_DIR."
-fi
-[ -n "$cfdir" ] && FAI_ETC_DIR=$cfdir
+# get configuration directory
+set_cfdir "$cfdir" "etc_message"
+export FAI_ETC_DIR=$cfdir
 unset cfdir
-: ${FAI_ETC_DIR:=/etc/fai}
-FAI_ETC_DIR=$(readlink -f $FAI_ETC_DIR) # canonicalize path
-export FAI_ETC_DIR
 
 # override FAI_ACTION later if a command line argument is given
 [ "$1" ] && export action=$1
