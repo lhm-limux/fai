@@ -132,13 +132,10 @@ shopt -s nullglob
 # get configuration directory
 set_cfdir "$cfdir"
 [ "$verbose" ] && echo "Using configuration files from $cfdir"
-. $cfdir/fai.conf
-: ${FAI:=/var/lib/fai/config} # default value
-: ${MNTPOINT:=/media/mirror}  # default value
 
-# read config file for this tool
-[ -f "$cfdir/nfsroot.conf" ] || die 8 "Can't read $cfdir/nfsroot.conf"
-. $cfdir/nfsroot.conf
+# read config files for this tool
+. /usr/lib/fai/subroutines-tools
+read_cfg "fai.conf" "nfsroot.conf"
 
 # IMO this may be removed, since all information should be included into sources.list
 [ -n "$FAI_LOCAL_REPOSITORY" ] && die "The use of \$FAI_LOCAL_REPOSITORY is now deprecated. Please include this information into sources.list."

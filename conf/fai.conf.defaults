@@ -1,0 +1,5 @@
+# Default values for fai.conf
+# Please keep sorted.
+: ${FAI_LOGPROTO:=ssh}
+: ${FAI:=/var/lib/fai/config}
+: ${MNTPOINT:=/media/mirror}
