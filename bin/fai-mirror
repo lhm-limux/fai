@@ -26,6 +26,8 @@
 
 # variables: NFSROOT, FAI_CONFIGDIR, FAI_ETC_DIR
 
+. /usr/lib/fai/subroutines-tools
+
 export FAI_ROOT=/ # do not execute in chroot, needed for install_packages call
 export PATH=$PATH:/usr/sbin
 
@@ -36,15 +38,6 @@ usage() {
     echo "fai-mirror -- create and manage a partial mirror for FAI."
     echo "Please read the manual page fai-mirror(1)."
     exit
-}
-# - - - - - - - - - - - - - - - - - - - - - - - - - -
-die() {
-
-    local e=$1   # first parameter is the exit code
-    shift
-
-    echo "$@" >&2 # print error message
-    exit $e
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 excludeclass() {
@@ -208,12 +201,8 @@ while getopts "a:Bvhx:pc:C:m:" opt ; do
 done
 shift $(($OPTIND - 1))
 
-# use FAI_ETC_DIR from environment variable
-[ -n "$FAI_ETC_DIR" -a -z "$cfdir" ] && echo "Using environment variable \$FAI_ETC_DIR."
-# use -C option if present otherwise use $FAI_ETC_DIR or default to /etc/fai
-[ -z "$cfdir" ] && cfdir=${FAI_ETC_DIR:=/etc/fai}
-cfdir=$(readlink -f $cfdir) # canonicalize path
-[ ! -d "$cfdir" ] && die 6 "$cfdir is not a directory"
+# get configuration directory
+set_cfdir "$cfdir"
 [ "$verbose" -eq 1 ] && echo "Using configuration files from $cfdir"
 . $cfdir/fai.conf
 . $cfdir/nfsroot.conf
