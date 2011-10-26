@@ -22,3 +22,4 @@ usr/sbin/fai-statoverride
 usr/sbin/fcopy
 usr/sbin/ftar
 usr/sbin/install_packages
+usr/share/fai/fai.conf.defaults

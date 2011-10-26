@@ -50,10 +50,7 @@ fai_init() {
 
     umask 022
     mkdir -p /var/run/fai
-    [ -f $FAI_ETC_DIR/fai.conf ] && . $FAI_ETC_DIR/fai.conf
-    : ${FAI:=/var/lib/fai/config} # default value
-    : ${MNTPOINT:=/media/mirror}  # default value
-    : ${FAI_LOGPROTO:=ssh}        # default value
+    read_cfg "${FAI_ETC_DIR}" "fai.conf"
     [ -n "$cspace" ] && FAI_CONFIG_SRC=$cspace
     unset cspace
 
@@ -61,7 +58,6 @@ fai_init() {
         umount /initrd
         romountopt=
         FAI_DEBMIRROR="--bind /media/mirror"
-        MNTPOINT=/media/mirror
         FAI_CONFIG_SRC="file://$FAI"   # on a fai-cd the config space is already available
     fi
 
@@ -253,10 +249,17 @@ if [ X$action = Xdirinstall ]; then
         echo "You may want to install the package fai-server" >&2
         exit 7
     fi
-    export NFSROOT=$(source $FAI_ETC_DIR/nfsroot.conf; echo $NFSROOT)
-    export FAI_DEBOOTSTRAP=$(source $FAI_ETC_DIR/nfsroot.conf; echo $FAI_DEBOOTSTRAP)
-    export FAI_DEBOOTSTRAP_OPTS=$(source $FAI_ETC_DIR/nfsroot.conf; echo $FAI_DEBOOTSTRAP_OPTS)
 
+    if [ ! -e /usr/share/fai/nfsroot.conf.defaults ]; then
+        echo "/usr/share/fai/nfsroot.conf.defaults not found." >&2
+        echo "You may want to install the package fai-server" >&2
+        exit 7
+    fi
+
+    (
+      read_cfg "${FAI_ETC_DIR}" "nfsroot.conf"
+      export NFSROOT FAI_DEBOOTSTRAP FAI_DEBOOTSTRAP_OPTS
+    )
 fi
 
 if [ $(id -u) != "0" ]; then

@@ -30,6 +30,8 @@ PATH=/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin
 
 set -e
 
+. /usr/lib/fai/subroutines-tools
+
 cfdir=/etc/fai
 
 options=$@ # all options are also passed to fai-make-nfsroot
@@ -42,11 +44,8 @@ while getopts pvC:efgkKlV:B: opt ; do
     esac
 done
 
-
-. $cfdir/fai.conf
-. $cfdir/nfsroot.conf
-
-: ${FAI_LOGPROTO:=ssh}
+set_cfdir "$cfdir"
+read_cfg "fai.conf" "nfsroot.conf"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 add_export_line() {
@@ -165,7 +164,7 @@ if [ -n "$LOGUSER" ]; then
 fi
 
 if [ -z "$FAI_CONFIGDIR" ]; then
-    echo "FAI_CONFIGDIR not set in /etc/fai/fai.conf."
+    echo "FAI_CONFIGDIR not set in /etc/fai/make-fai-nfsroot.conf."
     echo "Using /srv/fai/config as default."
     FAI_CONFIGDIR=/srv/fai/config
 fi

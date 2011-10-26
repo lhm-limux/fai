@@ -184,7 +184,9 @@ install:
 	install -m644 conf/dhclient-fai.conf $(DESTDIR)/usr/share/fai
 	install -m644 conf/apt.conf $(DESTDIR)/etc/apt/apt.conf.d/90fai
 	cd conf ; install -m644 fai.conf grub.cfg live.conf $(DESTDIR)/etc/fai/
+	install -m644 conf/fai.conf.defaults $(DESTDIR)/usr/share/fai/
 	install -m644 conf/nfsroot.conf $(DESTDIR)/etc/fai/
+	install -m644 conf/nfsroot.conf.defaults $(DESTDIR)/usr/share/fai/
 	install -m644 conf/sources.list $(DESTDIR)/etc/fai/apt/
 	install -m644 conf/NFSROOT $(DESTDIR)/etc/fai
 	install -m644 conf/upstart-fai.conf $(DESTDIR)/etc/init/fai.conf
