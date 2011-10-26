@@ -204,9 +204,8 @@ shift $(($OPTIND - 1))
 # get configuration directory
 set_cfdir "$cfdir"
 [ "$verbose" -eq 1 ] && echo "Using configuration files from $cfdir"
-. $cfdir/fai.conf
-. $cfdir/nfsroot.conf
-: ${MNTPOINT:=/media/mirror}  # default value
+# read config files for this tool
+read_cfg "fai.conf" "nfsroot.conf"
 
 if [ -d $NFSROOT/live/filesystem.dir ]; then
     NFSROOT=$NFSROOT/live/filesystem.dir
