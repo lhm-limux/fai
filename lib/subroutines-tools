@@ -42,3 +42,38 @@ set_cfdir() {
     cfdir=$(readlink -f $cfdir) # canonicalize path
     [ -d "$cfdir" ] || die 6 "$cfdir is not a directory"
 }
+
+### BEGIN SUBROUTINE INFO
+# Provides-Var:
+# Required-Var:      $@ (list of config files to source)
+# Suggested Var:     $cfdir
+# Short-Description: sources the config files and their corresponding defaults
+#
+# If the first argument is a directory, read config from this directory.
+#
+### END SUBROUTINE INFO
+
+read_cfg() {
+
+    local loc_cfdir=$1
+    local defaultsfile
+    local etcfile
+
+    if [ -d "$1" ]; then
+        shift
+    else
+        loc_cfdir=${cfdir}
+    fi
+    if [ ! -d "${loc_cfdir}" ]; then
+        die 6 "${loc_cfdir} is not a directory"
+    fi
+
+    for cfgfile in $@; do
+        defaultsfile="/usr/share/fai/$cfgfile.defaults"
+        etcfile="${loc_cfdir}/$cfgfile"
+        [ -f "$defaultsfile" ] || die 8 "Can't read $defaultsfile"
+        [ -f "$etcfile" ] || die 8 "Can't read $etcfile"
+        . "$defaultsfile"
+        . "$etcfile"
+    done
+}

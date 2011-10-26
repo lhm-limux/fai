@@ -13,4 +13,5 @@ usr/sbin/fai-monitor
 usr/sbin/fai-new-mac
 usr/sbin/fai-nfsroot2image
 usr/sbin/fai-setup
+usr/share/fai/nfsroot.conf.defaults
 usr/share/fai/pixmaps/*
