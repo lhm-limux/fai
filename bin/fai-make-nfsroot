@@ -574,21 +574,24 @@ if [ $sshpreserve = 1 ]; then
 fi
 
 if [ -d $NFSROOT/proc ]; then
-    umount $NFSROOT/dev/pts 1>/dev/null 2>&1 || true
-    [ -L $NFSROOT/proc/self ] && umount $NFSROOT/proc || true
-    [ -L $NFSROOT/proc/self ] && die 1 "/proc is still mounted inside the nfsroot."
-    umount $NFSROOT/$MNTPOINT  2>/dev/null || true # it's safer to try to umount
+    echo $NFSROOT already exists. Removing it.
 
-    oldnfsroot="$(dirname $NFSROOT)/$(basename $NFSROOT).will-now-be-deleted"
-    if mv $NFSROOT $oldnfsroot
-    then
-        # remove old nfsroot using a background process
-        mkdir $NFSROOT
-        nice rm -rf $oldnfsroot &
+    umount_dirs
+
+    oldnfsroot="$(dirname $NFSROOT)/.$(basename $NFSROOT).will-now-be-deleted"
+    if [ ! -e "$oldnfsroot" ]; then
+        mv $NFSROOT $oldnfsroot
     else
-        rm -rf $NFSROOT
-        mkdir $NFSROOT
+        echo "Also removing old nfsroot from previous rm run."
     fi
+    if [ -d "$oldnfsroot" ]; then
+        # remove old nfsroot using a background process
+        nice rm -rf $oldnfsroot &
+    fi
+    if [ -d "$NFSROOT/proc" ]; then
+        rm -rf $NFSROOT
+    fi
+    mkdir $NFSROOT
 fi
 
 create_nfsroot
