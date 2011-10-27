@@ -91,6 +91,7 @@ sshpreserve=0
 adjust=0
 generic=0
 force=0
+nobase=0
 
 callname=${0##*/}
 if [ $callname = make-fai-nfsroot ]; then
@@ -99,7 +100,7 @@ if [ $callname = make-fai-nfsroot ]; then
 fi
 
 # option e currently does nothing
-while getopts aghervC:B:fkKpU opt ; do
+while getopts aghervC:B:fkKpUN opt ; do
     case "$opt" in
         a) adjust=1 ;;
         g) generic=1 ;;
@@ -114,6 +115,7 @@ while getopts aghervC:B:fkKpU opt ; do
         h) usage ;;
         e) expert=1 ;; # a dummy option, that only fai-setup uses
         p) sshpreserve=1 ;;
+        N) nobase=1 ;;
         ?) exit 5 ;; # error in option parsing
     esac
 done
@@ -292,6 +294,7 @@ create_base() {
     call_debootstrap $FAI_DEBOOTSTRAP
     $ROOTCMD apt-get clean
     rm -f $NFSROOT/etc/resolv.conf $NFSROOT/etc/hostname $NFSROOT/etc/udev/rules.d/70-persistent-net.rules
+    [ $nobase -eq 1 ] && return
     if [ $usexz -eq 0 ]; then
         echo "Creating base.tar.gz"
     else
@@ -339,8 +342,11 @@ create_nfsroot() {
       create_base
     fi
     touch .THIS_IS_THE_FAI_NFSROOT
+
     # save the list of all packages in the base.tar.gz
-    $ROOTCMD dpkg --get-selections | awk '/install$/ {print $1}' > var/tmp/base-pkgs.lis
+    if [ $nobase -eq 0 ]; then
+        $ROOTCMD dpkg --get-selections | awk '/install$/ {print $1}' > var/tmp/base-pkgs.lis
+    fi
 
     if [ -n "$FAI_DEBMIRROR" ]; then
         [ "$verbose" ] && echo "Mounting $FAI_DEBMIRROR to $NFSROOT/$MNTPOINT."
