@@ -84,12 +84,10 @@ _ifclass() {
     [ "${flag_debug:-}" ] && echo "Test if class $1 is in ${classes:-}" >&2
     # test if a class is defined
     local ret
-
-    if [[ "${classes:-}" =~ (^|[[:space:]]+)$1($|[[:space:]]+) ]]; then
-        ret=0
-    else
-        ret=1
-    fi
+    local cl
+    for cl in ${classes:-}; do
+        [ x$cl = x$1 ] && ret=0 && break
+    done
     [ "${flag_debug:-}" ] && echo "ifclass returns $ret" >&2
     return $ret
 }
