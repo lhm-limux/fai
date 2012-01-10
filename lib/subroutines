@@ -191,11 +191,15 @@ task() {
     local taskname=$1
     shift
 
-    [ -f $LOGDIR/skip.$taskname ] || call_hook $taskname "$@"
+    # Evaluate skip file and FAI_FLAG skip${taskname}
+    local skipfile="$LOGDIR/skip.$taskname"
+    eval local skipflag='${flag_skip'${taskname}':=0}'
 
-    if [ -f $LOGDIR/skip.$taskname ]; then
+    [ -f $skipfile -o $skipflag -ne 0 ] || call_hook $taskname "$@"
+
+    if [ -f $skipfile -o $skipflag -ne 0 ]; then
         # skip task
-        rm $LOGDIR/skip.$taskname # TODO: remove skip files at the very end
+        rm -f $skipfile # TODO: remove skip files at the very end
         [ "$verbose" ] && echo "Skiping task_$taskname"
         sendmon "TASKSKIP $taskname"
     else
