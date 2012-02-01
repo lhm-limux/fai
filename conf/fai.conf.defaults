@@ -1,5 +1,6 @@
 # Default values for fai.conf
 # Please keep sorted.
+: ${FAI_DIE_ON_ERROR:=0}
 : ${FAI_DIE_SEVERITY:=fatal}
 : ${FAI_DIE_SLEEPING:=-1}
 : ${FAI_LOGPROTO:=ssh}
