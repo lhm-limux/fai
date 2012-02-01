@@ -278,6 +278,10 @@ task() {
     local skipfile="$LOGDIR/skip.$taskname"
     eval local skipflag='${flag_skip'${taskname}':=0}'
 
+    # Evaluate wait flags for task
+    eval local waitflag='${flag_wait'${taskname}':=0}'
+    [ ${flag_waittasks:=0} -eq 1 ] && waitflag=1
+
     [ -f $skipfile -o $skipflag -ne 0 ] || call_hook $taskname "$@"
 
     if [ -f $skipfile -o $skipflag -ne 0 ]; then
@@ -297,6 +301,13 @@ task() {
         sendmon "TASKEND $taskname $task_error_code"
         if [ "$task_error_code" -ne 0 ] ; then
             echo "Exit code task_$taskname: $task_error_code" >&2
+        fi
+
+        if [ $waitflag -eq 1 ]; then
+            echo "Waiting after task $taskname."
+            echo "Press <ENTER> to continue"
+            local readdummy
+            read readdummy
         fi
     fi
 
@@ -990,14 +1001,6 @@ task_confdir() {
     get-config-dir || {
         task error 906
     }
-
-    # now you have enough time to make changes to the config space
-    # only for debugging
-    if [ -n "$flag_wait" ]; then
-        echo "Sleeping. Now you may change the config space in $FAI."
-        echo "Continue after killall sleep."
-        sleep 50000
-    fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### BEGIN SUBROUTINE INFO
