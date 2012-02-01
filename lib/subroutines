@@ -34,16 +34,33 @@
 . /usr/lib/fai/subroutines-error
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### BEGIN SUBROUTINE INFO
+# Provides-Var:      none
+# Required-Var:      $FAI_DIE_SLEEPING $FAI_ACTION
+# Short-Description: echo comment and exit installation
+### END SUBROUTINE INFO
+
 die() {
 
-    # echo comment and exit installation
+    echo
+    echo "FAI DIE start"
+
+    sendmon "TASKDIE $taskname $task_error_code $task_error_msg"
     task savelog
-    echo "$@" >&2
-    if [ X$FAI_ACTION = Xinstall ]; then
-        exec bash -i
+
+    echo "Error in task $taskname. Traceback: $task_error_func" >&2
+    [ -n "$task_error_msg" ] && echo "$task_error_msg" >&2
+
+    if [ $FAI_DIE_SLEEPING -lt 0 ]; then
+        if [ "X$FAI_ACTION" = "Xinstall" ]; then
+            bash -i
+        fi
     else
-        exit 99
+        sleep $FAI_DIE_SLEEPING
     fi
+
+    task faiend
+    exit 99
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 defnop() {
@@ -158,11 +175,7 @@ wait_for_jobs() {
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 stop_fai_installation() {
 
-    # this subroutine should directly stop the installation process
-    sendmon "TASKERROR $taskname $task_error_code"
-    echo "Error in task $taskname. Traceback: $task_error_func" >&2
-    [ -n "$task_error_msg" ] && echo "Error message: $task_error_msg" >&2
-    die "FATAL ERROR. Installation stopped."
+    die
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### BEGIN SUBROUTINE INFO
@@ -431,7 +444,8 @@ task_action() {
             echo Showing system information.
             task sysinfo
             task_faiend
-            die Now you have a shell.
+            echo "Now you have a shell." >&2
+            exec bash -i
             ;;
         *)
             if [ -f $FAI/hooks/$FAI_ACTION ]; then
@@ -624,7 +638,8 @@ EOF
         cdromdevice=$(awk '/ name:/ {print $3}' /proc/sys/dev/cdrom/info)
         chroot $target /tmp/rebootCD $cdromdevice
         # never reached, because chroot will reboot the machine
-        die "Internal error when calling /tmp/rebootCD." >&2
+        echo "Internal error when calling /tmp/rebootCD." >&2
+        exec bash -i
     fi
     umount $FAI_ROOT/proc
     umount -arf 2>/dev/null
