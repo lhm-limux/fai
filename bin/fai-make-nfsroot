@@ -350,24 +350,10 @@ create_nfsroot() {
         $ROOTCMD dpkg --get-selections | awk '/install$/ {print $1}' > var/tmp/base-pkgs.lis
     fi
 
-    if [ -n "$FAI_DEBMIRROR" ]; then
-        [ "$verbose" ] && echo "Mounting $FAI_DEBMIRROR to $NFSROOT/$MNTPOINT."
-        mkdir -p $NFSROOT/$MNTPOINT
-        mount -o ro,noatime $FAI_DEBMIRROR $NFSROOT/$MNTPOINT || \
-                die 1 "Can't mount $FAI_DEBMIRROR to $NFSROOT/$MNTPOINT."
-    fi
+    mount_dirs
 
     # liloconfig, dump needs these files
     echo "# UNCONFIGURED FSTAB FOR BASE SYSTEM" > etc/fstab
-
-    # Work around Ubuntu's failure in installing rsyslog with
-    # "start: Unable to connect to Upstart: Failed to connect to
-    # socket /com/ubuntu/upstart: Connection refused"
-    if $ROOTCMD test -x /usr/sbin/dpkg-divert && [ -x $NFSROOT/sbin/initctl ] ; then
-      LC_ALL=C $ROOTCMD dpkg-divert --quiet --add --rename /sbin/initctl
-      ln -sf /bin/true $NFSROOT/sbin/initctl
-      INITCTL_DIVERT=true
-    fi
 
     # we need these option before installing the first package. So we
     # can't put this into fai-nfsroot /etc/apt/apt.conf.d/90fai
@@ -389,7 +375,7 @@ EOF
     fi
 
     [ "$verbose" ] && echo "Upgrading $NFSROOT"
-    LC_ALL=C call_verbose upgrade_nfsroot  
+    LC_ALL=C call_verbose upgrade_nfsroot
 
     # overwrite default live.conf
     if [ "$NFSROOT_ROOTDIR" = "/live/filesystem.dir" ]; then
@@ -431,10 +417,6 @@ EOF
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 upgrade_nfsroot() {
 
-    mount -t proc   /proc  $NFSROOT/proc
-    mount -t sysfs  /sys   $NFSROOT/sys
-    mount -t devpts devpts $NFSROOT/dev/pts
-    /usr/lib/fai/mkramdisk $NFSROOT/var/lib/dpkg
     mkdir $NFSROOT/etc/mdadm; touch $NFSROOT/etc/mdadm/mdadm.conf # stop mdadm from calling mkconf
 
     # add any 3rd party repository keys that you may need installed into the NFSROOT
@@ -464,21 +446,55 @@ add_packages_nfsroot() {
     echo "install_packages exit code: $?"
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+mount_dirs() {
+
+    mount --bind  /proc     $NFSROOT/proc
+    mount --bind  /sys      $NFSROOT/sys
+    mount --bind  /dev      $NFSROOT/dev
+    mount --bind  /dev/pts  $NFSROOT/dev/pts
+    mount --bind  /dev/shm  $NFSROOT/dev/shm
+    /usr/lib/fai/mkramdisk $v $NFSROOT/var/lib/dpkg
+
+    if [ -n "$FAI_DEBMIRROR" ]; then
+        [ "$verbose" ] && echo "Mounting $FAI_DEBMIRROR to $NFSROOT/$MNTPOINT."
+        mkdir -p $NFSROOT/$MNTPOINT
+        mount -o ro,noatime $FAI_DEBMIRROR $NFSROOT/$MNTPOINT || \
+                die 1 "Can't mount $FAI_DEBMIRROR to $NFSROOT/$MNTPOINT."
+    fi
+
+    # Work around Ubuntu's failure in installing rsyslog with
+    # "start: Unable to connect to Upstart: Failed to connect to
+    # socket /com/ubuntu/upstart: Connection refused"
+    if $ROOTCMD test -x /usr/sbin/dpkg-divert && [ -x $NFSROOT/sbin/initctl ] ; then
+        LC_ALL=C call_verbose $ROOTCMD dpkg-divert --quiet --add --rename /sbin/initctl
+        ln -sf /bin/true $NFSROOT/sbin/initctl
+        INITCTL_DIVERT=1
+    fi
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 umount_dirs() {
+
+    # get rid of initctl divert
+    if [ "$INITCTL_DIVERT" ] ; then
+        rm -f $NFSROOT/sbin/initctl
+        LC_ALL=C call_verbose $ROOTCMD dpkg-divert --rename --remove /sbin/initctl
+    fi
 
     cd /
     [ -d $NFSROOT/proc/self ] && umount $NFSROOT/proc
     [ -d $NFSROOT/sys/class ] && umount $NFSROOT/sys
     [ -d $NFSROOT/proc/self ] && die 1 "/proc still mounted inside the nfsroot."
     umount $NFSROOT/dev/pts 2> /dev/null || true
+    umount $NFSROOT/dev/shm 2> /dev/null || true
+    umount $NFSROOT/dev     2> /dev/null || true
 
-    if mount | grep -q "on $NFSROOT/var/lib/dpkg type tmpfs" ; then
-        /usr/lib/fai/mkramdisk -u $NFSROOT/var/lib/dpkg
+    /usr/lib/fai/mkramdisk $v -u $NFSROOT/var/lib/dpkg || true
+
+    DEBMIRROR_MNT=$(readlink -m "$NFSROOT/$MNTPOINT")
+    if [ -n "$FAI_DEBMIRROR" ] && [ mountptoint "$DEBMIRROR_MNT" >/dev/null 2>&1 ] ; then
+        umount "$DEBMIRROR_MNT" || true
     fi
 
-    if [ -n "$FAI_DEBMIRROR" ]; then
-        test -d $NFSROOT/$MNTPOINT && umount $NFSROOT/$MNTPOINT || true
-    fi
     # show directories still mounted on nfsroot
     mount | grep " on $NFSROOT " || true
 }
@@ -606,8 +622,8 @@ trap "bad_exit" ERR
 
 # just update the nfsroot from class
 [ -n "$kinstall" ] && {
-    trap "true" EXIT
     echo "Upgrading nfsroot and installing new packages into the nfsroot."
+    mount_dirs
     iarch=$($ROOTCMD dpkg --print-architecture|tr /a-z/ /A-Z/)
     export classes="NFSROOT $iarch"
     if [ -r "$cfdir/NFSROOT.debconf" ]; then
@@ -680,12 +696,6 @@ if [ $generic = 1 ]; then
     # remove fai.conf which comes from package fai-client
     rm -f $NFSROOT/etc/hosts $NFSROOT/etc/resolv.conf* $NFSROOT/etc/fai/fai.conf
     ainsl -as $v $NFSROOT/etc/hosts "127.0.0.1 localhost"
-fi
-
-# get rid of initctl divert again
-if [ "$INITCTL_DIVERT" = true ] ; then
-  rm -f $NFSROOT/sbin/initctl
-  LC_ALL=C $ROOTCMD dpkg-divert --rename --remove /sbin/initctl
 fi
 
 umount_dirs
