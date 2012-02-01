@@ -190,16 +190,17 @@ if [ -f $LOGDIR/additional-classes ]; then
 fi
 
 # add all classes which are listed in a file with the hostname
-if [ -f "$HOSTNAME" ]; then
-        verbosemsg "Using classes from file $classdir/$HOSTNAME"
-        grep -v "^#" $HOSTNAME | addclass
+LOWER_HOSTNAME="$(echo $HOSTNAME | tr [A-Z] [a-z])"
+if [ -f "$LOWER_HOSTNAME" ]; then
+        verbosemsg "Using classes from file $classdir/$LOWER_HOSTNAME"
+        grep -v "^#" $LOWER_HOSTNAME | addclass
 fi
 
 echo ${ADDCLASSES//,/ } | addclass
 
 # now add the hostname (the only class in lowercase) and LAST to
 # the list of classes
-echo $HOSTNAME LAST | addclass
+echo $LOWER_HOSTNAME LAST | addclass
 
 # show all classes if verbose
 debugmsg List of all classes: $(cat $filename)
