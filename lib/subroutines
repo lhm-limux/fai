@@ -177,9 +177,19 @@ stop_fai_installation() {
 
 task_error() {
 
-    task_error_func=${FUNCNAME[*]}
     task_error_code=$1
     shift
+
+    # Remove error handler from backtrace
+    local -a backtrace
+    backtrace=("${FUNCNAME[@]}")
+    unset backtrace[0]
+    unset backtrace[1]
+    task_error_func="${backtrace[*]}"
+    for item in $task_error_func; do
+        taskname=${item#task_}
+        [ "${taskname}" != "${item}" ] && break
+    done
 
     # Get the error message in $task_error_msg
     fai_strerror $@
