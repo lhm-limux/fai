@@ -24,7 +24,7 @@ mount_ramdisk() {
         return
     fi
 
-    echo
+    [ "$verbose" ] && echo
 
     set -e
     local tmp1=$(mktemp) || exit 12
@@ -46,7 +46,7 @@ umount_ramdisk() {
     # test, if a ramdisk is mounted to this directory
     mount | grep -q " $disk type tmpfs"
     if [ $? -eq 1 ]; then
-        echo "$disk is not a mounted ramdisk." >&2
+        [ "$verbose" ] && echo "$disk is not a mounted ramdisk." >&2
         return
     fi
 
@@ -66,17 +66,14 @@ size= # no default size
 umount=0
 useall=0
 
-# mkramdisk
-
-
-
-while getopts ans:u opt ; do
+while getopts ans:uv opt ; do
     case "$opt" in
     # -a: mount all dirs listed in FAI_RAMDISKS instead of dirs given as arguments
         a) useall=1 ;;
         u) umount=1 ;;       # umount instead of mount
         s) size="-o size=$OPTARG" ;; # give size of ramdisk
         n) mtab="-n" ;;      # do not wirte to /etc/mtab
+        v) verbose=1 ;;
         esac
 done
 shift $(($OPTIND - 1))
