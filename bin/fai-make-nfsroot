@@ -147,9 +147,13 @@ read_cfg "fai.conf" "nfsroot.conf"
 [ ! -d "$cfdir/apt" ] && die 1 "$cfdir/apt/ does not exists. Can't continue."
 [ -n "$FAI_BOOT" ] && die 1 "Variable \$FAI_BOOT is not supported any more. Will only set up TFTP environment."
 
-NFSROOT=$(readlink -f "${NFSROOT}/${NFSROOT_ROOTDIR}")
-ROOTCMD="chroot $NFSROOT"
+NFSROOT=$(readlink -m "${NFSROOT}/${NFSROOT_ROOTDIR}")
+
+export ROOTCMD="chroot $NFSROOT"
 export DEBIAN_FRONTEND=noninteractive
+export LOGDIR=$NFSROOT/var/tmp
+export FAI_ROOT=$NFSROOT
+export target=$NFSROOT
 
 usexz=0
 if [ -x "$(which xz)" ]; then
