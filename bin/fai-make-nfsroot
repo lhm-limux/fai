@@ -227,16 +227,16 @@ setup_ssh() {
 copy_fai_files() {
 
     [ $generic = 1 ] && return # do nothing here if we generate a generic nfsroot
-    # copy to nfsroot
-    $ROOTCMD usermod -p "$FAI_ROOTPW" root
-    return # do not copy fai files at all
 
-    cp -RLpv $cfdir/* $NFSROOT/etc/fai
-    # append additional variables to fai.conf for the install clients
-    [ -z "$FAI_CONFIG_SRC" ] && echo "FAI_CONFIG_SRC=nfs://`hostname`$FAI_CONFIGDIR" >> $NFSROOT/etc/fai/fai.conf
+    # Set chroot root password for SSH access during install
+    $ROOTCMD usermod -p "$FAI_ROOTPW" root
 
     # remove some files that should not be copied
     rm -f $NFSROOT/etc/fai/nfsroot.conf
+
+    # We need the local FAI configuration
+    mkdir -p $NFSROOT/etc/fai
+    cp $v $cfdir/fai.conf $NFSROOT/etc/fai
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 call_debootstrap() {
@@ -298,6 +298,7 @@ create_base() {
 
     [ ! -x "$(which debootstrap)" ] && die 1 "Can't find debootstrap command. Aborting."
     call_debootstrap $FAI_DEBOOTSTRAP
+    fdivert /usr/sbin/update-grub
     $ROOTCMD apt-get clean
     rm -f $NFSROOT/etc/resolv.conf $NFSROOT/etc/hostname $NFSROOT/etc/udev/rules.d/70-persistent-net.rules
     [ $nobase -eq 1 ] && return
@@ -337,8 +338,36 @@ extract_base() {
     fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-create_nfsroot() {
+upgrading_nfsroot() {
 
+    local iarch=$($ROOTCMD dpkg --print-architecture|tr /a-z/ /A-Z/)
+
+    echo "Applying debconf data"
+    export classes="NFSROOT $iarch"
+    LC_ALL=C call_verbose fai-debconf $v $cfdir
+
+    echo "Upgrading $NFSROOT"
+    # add any 3rd party repository keys that you may need installed into the NFSROOT
+    if [ -d $cfdir/apt/keys ]; then
+        local f
+        for f in `find $cfdir/apt/keys -type f -name *.asc`; do
+            [ "$verbose" ] && echo "Adding APT key $(basename $f)"
+            cat $f | $ROOTCMD apt-key add - >/dev/null
+        done
+    fi
+
+    call_verbose $ROOTCMD apt-get update
+    # fai-nfsroot just needs to be installed initially
+    if [ "$1" = "init" ]; then
+        LC_ALL=C call_verbose $ROOTCMD aptitude -Rfy install fai-nfsroot nfs-common
+    fi
+    LC_ALL=C call_verbose $ROOTCMD apt-get -y dist-upgrade
+
+    # Adding packages from NFSROOT and $iarch class
+    LC_ALL=C add_packages_nfsroot
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+bootstraping_nfsroot() {
     mkdir -p $NFSROOT/$FAI
     cd $NFSROOT || die 1 "Can't cd to $NFSROOT"
 
@@ -354,8 +383,6 @@ create_nfsroot() {
         $ROOTCMD dpkg --get-selections | awk '/install$/ {print $1}' > var/tmp/base-pkgs.lis
     fi
 
-    mount_dirs
-
     # liloconfig, dump needs these files
     echo "# UNCONFIGURED FSTAB FOR BASE SYSTEM" > etc/fstab
 
@@ -367,19 +394,7 @@ Aptitude::CmdLine::Ignore-Trust-Violations yes;
 Acquire::Languages none;
 EOF
 
-    # this copies sources.list into the nfsroot
-    cp -La $cfdir/apt $NFSROOT/etc
-
     add_etc_hosts_entries
-
-    local iarch=$($ROOTCMD dpkg --print-architecture|tr /a-z/ /A-Z/)
-    export classes="NFSROOT $iarch"
-    if [ -r "$cfdir/NFSROOT.debconf" ]; then
-        fai-debconf $v $cfdir
-    fi
-
-    [ "$verbose" ] && echo "Upgrading $NFSROOT"
-    LC_ALL=C call_verbose upgrade_nfsroot
 
     # overwrite default live.conf
     if [ "$NFSROOT_ROOTDIR" = "/live/filesystem.dir" ]; then
@@ -387,7 +402,14 @@ EOF
         cp -Lp $cfdir/live.conf etc/live.conf
     fi
 
-    LC_ALL=C add_packages_nfsroot
+    # this copies sources.list into the nfsroot
+    cp -La $v $cfdir/apt $NFSROOT/etc
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+configuring_nfsroot() {
+
+    cd $NFSROOT || die 1 "Can't cd to $NFSROOT"
+
     copy_fai_files
 
     # set timezone in nfsroot
@@ -400,54 +422,29 @@ EOF
         find etc/init ! -type d | egrep -v "fai|udev|hostname|mountall|mounted" | xargs -r rm
     fi
 
-    rm -f etc/mdadm/mdadm.conf # remove file which may contain info of the install server
-    # this second rm of the same file is needed!
+    # create an empty mdadm.conf, otherwise it may contain data from the server
+    echo > etc/mdadm/mdadm.conf
+
+    # we don't need any persistent net devices
     rm -f etc/udev/rules.d/70-persistent-net.rules
+
     # remove Ubuntu-specific rules to auto-start volume groups, which confuses
     # setup-storage
     rm -f lib/udev/rules.d/85-lvm2.rules
+
     # definition for loopback device
     echo "iface lo inet loopback" > etc/network/interfaces
 
     cat >> root/.profile <<-EOF
-	PATH=/usr/local/sbin:/usr/local/bin:/usr/lib/fai:/bin:/sbin:/usr/bin:/usr/sbin:
-	export PATH
-	. /usr/lib/fai/subroutines
-	set -a
-	. /tmp/fai/variables.log 2>/dev/null
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/lib/fai:/bin:/sbin:/usr/bin:/usr/sbin
+export PATH
+. /usr/lib/fai/subroutines
+set -a
+. /tmp/fai/variables.log 2>/dev/null
 EOF
 
-}
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-upgrade_nfsroot() {
-
-    mkdir $NFSROOT/etc/mdadm; touch $NFSROOT/etc/mdadm/mdadm.conf # stop mdadm from calling mkconf
-
-    # add any 3rd party repository keys that you may need installed into the NFSROOT
-    if [ -d $cfdir/apt/keys ]; then
-        local f
-        for f in `find $cfdir/apt/keys -type f -name *.asc`; do
-            [ "$verbose" ] && echo "Adding APT key $(basename $f)"
-            cat $f | $ROOTCMD apt-key add - >/dev/null
-        done
-    fi
-    $ROOTCMD apt-get update
-    $ROOTCMD aptitude -Rfy install fai-nfsroot nfs-common
-    $ROOTCMD apt-get -y dist-upgrade
-    fdivert /usr/sbin/update-grub
-}
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-add_packages_nfsroot() {
-
-    local iarch=$($ROOTCMD dpkg --print-architecture|tr /a-z/ /A-Z/)
-    export FAI_ROOT=$NFSROOT
-    export LOGDIR=$NFSROOT/var/tmp
-
-    install_packages -l -p$cfdir > $LOGDIR/packages.nfsroot
-    echo "Adding additional packages to $NFSROOT:"
-    cat $LOGDIR/packages.nfsroot
-    call_verbose install_packages -N $v -p$cfdir
-    echo "install_packages exit code: $?"
+    call_verbose setup_ssh
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 mount_dirs() {
@@ -501,6 +498,22 @@ umount_dirs() {
 
     # show directories still mounted on nfsroot
     mount | grep " on $NFSROOT " || true
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+add_packages_nfsroot() {
+
+    echo -n "Adding additional packages to $NFSROOT"
+    if [ "$verbose" ]; then
+        install_packages -l -p$cfdir > $LOGDIR/packages.nfsroot
+        echo -n ": " $(< "$LOGDIR"/packages.nfsroot)
+    else
+        echo
+    fi
+    call_verbose install_packages -N $v -p$cfdir
+    local ipexitcode=$?
+    if [ "$verbose" -o $ipexitcode -ne 0 ] ; then
+        echo "install_packages exit code: $ipexitcode"
+    fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 symlink_kernels() {
@@ -628,14 +641,7 @@ trap "bad_exit" ERR
 [ -n "$kinstall" ] && {
     echo "Upgrading nfsroot and installing new packages into the nfsroot."
     mount_dirs
-    iarch=$($ROOTCMD dpkg --print-architecture|tr /a-z/ /A-Z/)
-    export classes="NFSROOT $iarch"
-    if [ -r "$cfdir/NFSROOT.debconf" ]; then
-        fai-debconf $v $cfdir
-    fi
-    $ROOTCMD apt-get update
-    $ROOTCMD apt-get -y dist-upgrade
-    LC_ALL=C add_packages_nfsroot
+    upgrading_nfsroot
     setup_tftp
     run_hooks
     umount_dirs
@@ -690,9 +696,11 @@ if [ -d $NFSROOT/proc ]; then
     mkdir $NFSROOT
 fi
 
-create_nfsroot
+bootstraping_nfsroot
+mount_dirs
+upgrading_nfsroot "init"
+configuring_nfsroot
 setup_tftp
-call_verbose setup_ssh
 run_hooks
 check_nfsroot
 
