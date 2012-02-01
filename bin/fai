@@ -39,7 +39,7 @@ stamp=/var/run/fai/FAI_INSTALLATION_IN_PROGRESS
 export romountopt="-o async,noatime,nolock,ro,actimeo=1800"
 export FAI_ABORT="reboot"
 
-export STOP_ON_ERROR=700
+export FAI_DIE_ON_ERROR
 export FAI_DIE_SLEEPING
 export faimond=0
 export renewclass=0
