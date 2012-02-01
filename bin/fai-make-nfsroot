@@ -92,6 +92,7 @@ adjust=0
 generic=0
 force=0
 nobase=0
+symlink=0
 
 callname=${0##*/}
 if [ $callname = make-fai-nfsroot ]; then
@@ -100,7 +101,7 @@ if [ $callname = make-fai-nfsroot ]; then
 fi
 
 # option e currently does nothing
-while getopts aghervC:B:fkKpUN opt ; do
+while getopts aghervC:B:fkKpUNS opt ; do
     case "$opt" in
         a) adjust=1 ;;
         g) generic=1 ;;
@@ -116,6 +117,7 @@ while getopts aghervC:B:fkKpUN opt ; do
         e) expert=1 ;; # a dummy option, that only fai-setup uses
         p) sshpreserve=1 ;;
         N) nobase=1 ;;
+        S) symlink=1 ;;
         ?) exit 5 ;; # error in option parsing
     esac
 done
@@ -480,17 +482,90 @@ umount_dirs() {
     mount | grep " on $NFSROOT " || true
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+symlink_kernels() {
+    local KVER=""
+    local NKVER
+    local kfile=${1}
+
+    [ "$verbose" ] && echo "Creating kernel and initrd symlinks"
+
+    # cleanup pending symlinks in TFTPROOT
+    for file in `ls -1 $TFTPROOT/*`; do
+        if [ -h "$file" -a ! -e "$file" ]; then
+            rm -f "$file"
+        fi
+    done
+
+    # symlink kernels
+    [ "$verbose" ] && echo -n "Kernels:"
+    for KERN in `ls -1 $NFSROOT/boot/$kfile-*`; do
+        ln -sf $KERN $TFTPROOT
+        NKVER=$(basename ${KERN})
+        NKVER=${NKVER#vmlinu?-}
+        [ "$verbose" ] && echo -n " $NKVER"
+        if [ "x" != "x$KVER" ]; then
+            dpkg --compare-versions $NKVER gt $KVER
+            if [ $? -eq 0 ]; then
+                KVER=$NKVER
+            fi
+        else
+            KVER=$NKVER
+        fi
+
+        INITRD="$(dirname ${KERN})/initrd.img-$NKVER"
+        for INITRD in "$(dirname ${KERN})/initrd.img-$NKVER" \
+                      "$(dirname ${KERN})/initramfs-${NKVER}.img"
+        do
+            if [ -e "$INITRD" ]; then
+                ln -sf $INITRD $TFTPROOT
+                break
+            fi
+        done
+    done
+    [ "$verbose" ] && echo
+
+    # create default links
+    rm -f $TFTPROOT/$kfile-install
+    rm -f $TFTPROOT/initrd.img-install
+
+    if [ -e "$TFTPROOT/$kfile-$KVER" ]; then
+        echo "Linking default kernel: $KVER"
+
+        # default kernel
+        ln -sf $kfile-$KVER $TFTPROOT/$kfile-install
+
+        if [ -e "$TFTPROOT/initrd.img-$KVER" ]; then
+            # default initrd
+            ln -s initrd.img-$KVER $TFTPROOT/initrd.img-install
+        fi
+    else
+        echo "Warning - no kernel found!"
+    fi
+}
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 setup_tftp(){
 
-    # tftp environment
+    echo "Preparing TFTP environment..."
+
     local pxebin=$NFSROOT/usr/lib/syslinux/pxelinux.0
+    local kfile=`basename $(ls -1 $NFSROOT/boot/vmlinu?-* | head -n 1)`
+    kfile=${kfile%%-*}
+
     rm -f $NFSROOT/boot/*.bak
     mkdir -p $TFTPROOT/pxelinux.cfg
     chmod a+r $NFSROOT/boot/initrd.img-*
-    cp -pv $NFSROOT/boot/vmlinu?-* $NFSROOT/boot/initrd.img-* $TFTPROOT
+    if [ 1 -eq $symlink ]; then
+        symlink_kernels "${kfile}"
+    else
+        cp -pv $NFSROOT/boot/${kfile}-* $NFSROOT/boot/initrd.img-* $NFSROOT/boot/initramfs-*.img $TFTPROOT
+    fi
     [ -f $TFTPROOT/pxelinux.0 ] || cp $pxebin $TFTPROOT
-    echo "TFTP environment prepared. To use it, enable the dhcpd and start a TFTP daemon on root $TFTPROOT."
+    if [ "$verbose" ]; then
+        echo "To use it, enable DHCP and start a TFTP daemon on root $TFTPROOT."
+    fi
 }
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fdivert() {
 
