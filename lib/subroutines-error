@@ -151,7 +151,8 @@ fai_verify_error() {
     local die_severity=$?
 
     local skipfile="$LOGDIR/skip.$task_error_code"
-    if [ \( $task_error_sevy -lt $die_severity -a $task_error_code -lt $STOP_ON_ERROR \) \
+    if [ \( $task_error_sevy -lt $die_severity \
+            -a $task_error_code -ne $FAI_DIE_ON_ERROR \) \
             -o -f "$skipfile" ]; then
         task_error_die=0
     else

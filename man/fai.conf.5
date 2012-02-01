@@ -127,6 +127,13 @@ Valid values are reboot and poweroff. Defaults to reboot.
 \fBFAI_DIE_SEVERITY\fP Minimal error severity to abort FAI.
 Valid values are warn, error and fatal. Defaults to fatal.
 
+.TP
+\fBFAI_DIE_ON_ERROR\fP Exact error code to abort FAI.
+This variable contains the an FAI error code, which will abort FAI. It
+defaults to 0, which is no error code, so only FAI_DIE_SEVERITY is used. Be
+aware that fatal errors will always abort FAI, except if they are explicitly
+skipped using fai_skiperror <error code>.
+
 .SH SEE ALSO
 
 .BR fai (8),
