@@ -615,8 +615,8 @@ run_hooks() {
     [ -d "$NFSROOT_HOOKS" ] || return 0
 
     echo "Running hooks..."
-    for file in $(cd $NFSROOT_HOOKS ;ls 2>/dev/null | egrep '^[[:alnum:]_.-]+$'); do
-        . $NFSROOT_HOOKS/$file
+    for file in $(run-parts --lsbsysinit --list "$NFSROOT_HOOKS"); do
+        . $file $v
     done
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - -
