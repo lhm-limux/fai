@@ -246,7 +246,7 @@ call_debootstrap() {
     fi
     local dversion=$(dpkg -l debootstrap | awk '/debootstrap/ {print $3}')
     echo "Creating base system using debootstrap version $dversion"
-    echo "Calling debootstrap $FAI_DEBOOTSTRAP_OPTS $1 $NFSROOT $2 $3"
+    [ "$verbose" ] && echo "Calling debootstrap $FAI_DEBOOTSTRAP_OPTS $1 $NFSROOT $2 $3"
     LC_ALL=C call_verbose debootstrap $FAI_DEBOOTSTRAP_OPTS $1 $NFSROOT $2 $3
     if [ $? -ne 0 ]; then
         echo "ERROR: debootstrap did not complete successfully."
@@ -267,9 +267,9 @@ call_debootstrap() {
 add_etc_hosts_entries() {
 
     # some default entries
-    ainsl -as $NFSROOT/etc/hosts "127.0.0.1 localhost"
-    ainsl     $NFSROOT/etc/hosts "# Following entries are specific to your environment"
-    ainsl     $NFSROOT/etc/hosts "$NFSROOT_ETC_HOSTS"
+    ainsl -as $v $NFSROOT/etc/hosts "127.0.0.1 localhost"
+    ainsl     $v $NFSROOT/etc/hosts "# Following entries are specific to your environment"
+    ainsl     $v $NFSROOT/etc/hosts "$NFSROOT_ETC_HOSTS"
 
     # add entries for all network devices
     local ips=$(ip addr show up| grep -w inet | cut -d t -f 2 | cut -d ' ' -f 2 | cut -d / -f 1 | grep -v 127.0.0.1)
@@ -278,9 +278,9 @@ add_etc_hosts_entries() {
     for eth in $ips; do
         line=$(getent hosts $eth || true)
         if [ -n "$line" ] ; then
-          ainsl -v $NFSROOT/etc/hosts "$line"
+            ainsl $v $NFSROOT/etc/hosts "$line"
         else
-          echo "Warning: no hostname for $eth found, not adding to /etc/hosts."
+            echo "Warning: no hostname for $eth found, not adding to /etc/hosts."
         fi
     done
 
@@ -441,7 +441,8 @@ upgrade_nfsroot() {
     if [ -d $cfdir/apt/keys ]; then
         local f
         for f in `find $cfdir/apt/keys -type f -name *.asc`; do
-            cat $f | $ROOTCMD apt-key add -
+            [ "$verbose" ] && echo "Adding APT key $(basename $f)"
+            cat $f | $ROOTCMD apt-key add - >/dev/null
         done
     fi
     $ROOTCMD apt-get update
@@ -675,7 +676,7 @@ check_nfsroot
 if [ $generic = 1 ]; then
     # remove fai.conf which comes from package fai-client
     rm -f $NFSROOT/etc/hosts $NFSROOT/etc/resolv.conf* $NFSROOT/etc/fai/fai.conf
-    ainsl -as $NFSROOT/etc/hosts "127.0.0.1 localhost"
+    ainsl -as $v $NFSROOT/etc/hosts "127.0.0.1 localhost"
 fi
 
 # get rid of initctl divert again
@@ -700,6 +701,7 @@ echo "fai-make-nfsroot finished $merror."
 exit $exitcode
 } 2>&1 | tee -a /var/log/fai/fai-make-nfsroot.log
 RC=${PIPESTATUS[0]}
+verbose=0; v=
 umount_dirs
 trap "true" EXIT
 echo "Log file written to /var/log/fai/fai-make-nfsroot.log"
