@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 ### BEGIN SUBROUTINE INFO
 # Provides-Var:    none
@@ -9,16 +9,43 @@
 checkdisk() {
 
     while read major minor blocks device suffix; do
-        isdisk=1
+        # skip missing devices
+        [ ! -b /dev/$device ] && continue
+
         # skip ide cdrom
-        [ -f /proc/ide/$device/media ] && grep -q cdrom /proc/ide/$device/media && isdisk=0
-# old way of detecting disks: [ `cat /sys/block/$device/removable` -eq 1 ] && isdisk=0
-        [ `stat -c %G /dev/$device` = "disk" ] || isdisk=0
-        [ $isdisk -eq 1 ] && echo "$device"
+        [ -f /proc/ide/$device/media ] && grep -q cdrom /proc/ide/$device/media && continue
+
+        # don't install on usb devices
+        if [ $skipusb -eq 1 ]; then
+            readlink -e "/sys/block/${device}/device" | grep -q "/usb[0-9]\+/" && continue
+        fi
+
+        # disks should be owned by group "disk"
+        [ `stat -c %G /dev/$device` = "disk" ] || continue
+
+        echo "$device"
     done
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# Parse commandline options
+GETOPT=$(getopt --long skipusb -n "$0" -o '' -- "$@")
+if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
+eval set -- "$GETOPT"
+unset GETOPT
+
+skipusb=0
+while true ; do
+    case "$1" in
+        --skipusb)
+            skipusb=1 ; shift ;;
+        --) shift ; break ;;
+        *)
+            echo "$0: command line parsing error ! $@" >&2
+            exit 1 ;;
+    esac
+done
+
 # echo a space separated list of devices and their block size
 egrep ' etherd/e[[:digit:]]+\.[[:digit:]]+\b| i2o/hd.+\b| cciss/c.+d.+\b| ida/c.+d.+\b| rd/c.+d.+\b| hd.\b| sd[a-z]{1,2}\b|/disc\b| vd.\b| xvd.\b' /proc/partitions | checkdisk
-
 
