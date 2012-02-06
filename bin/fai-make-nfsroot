@@ -144,7 +144,7 @@ read_cfg "fai.conf" "nfsroot.conf"
 [ -z "$NFSROOT" ] && die 1 "\$NFSROOT is not set. Please check your settings in $cfdir/nfsroot.conf."
 [ -z "$TFTPROOT" ] && badupdateto32 "\$TFTPROOT is not set. Please check your settings in $cfdir/nfsroot.conf."
 [ -n "$KERNELPACKAGE" ] && badupdateto32 "The use of \$KERNELPACKAGE is deprecated. Please use $cfdir/NFSROOT now."
-[ ! -d "$cfdir/apt" ] && die 1 "$cfdir/apt/ does not exists. Can't continue."
+[ ! -d "$cfdir/NFSROOT_files/etc/apt" ] && die 1 "$cfdir/NFSROOT_files/etc/apt/ does not exists. Can't continue."
 [ -n "$FAI_BOOT" ] && die 1 "Variable \$FAI_BOOT is not supported any more. Will only set up TFTP environment."
 
 NFSROOT=$(readlink -m "${NFSROOT}/${NFSROOT_ROOTDIR}")
@@ -396,14 +396,13 @@ EOF
 
     add_etc_hosts_entries
 
-    # overwrite default live.conf
-    if [ "$NFSROOT_ROOTDIR" = "/live/filesystem.dir" ]; then
-        [ -f $cfdir/live.conf ] || die 1 "$cfdir/live.conf not found."
-        cp -Lp $cfdir/live.conf etc/live.conf
-    fi
+    # copy all NFSroot files into the nfsroot
+    cp -La $v $cfdir/NFSROOT_files/* $NFSROOT/
 
-    # this copies sources.list into the nfsroot
-    cp -La $v $cfdir/apt $NFSROOT/etc
+    # check for valid live.conf
+    if [ "$NFSROOT_ROOTDIR" = "/live/filesystem.dir" ]; then
+        [ -f "$NFSROOT"/etc/live.conf ] || die 1 "$NFSROOT/etc/live.conf not found."
+    fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 configuring_nfsroot() {
