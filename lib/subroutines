@@ -844,8 +844,11 @@ catnc() {
 
 set_disk_info() {
 
+    local args=""
+    [ "${flag_skipusb}" ] && args="$args --skipusb"
+
     # the variable holds a space separated list of devices
-    disklist=$(fai-disk-info | sort | tr '\n' ' ')
+    disklist=$(fai-disk-info $args | sort | tr '\n' ' ')
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 eval_cmdline() {
