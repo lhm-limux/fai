@@ -108,8 +108,8 @@ The configuration file for fai-make-nfsroot.
 Directory containing shell scripts to be sourced at the end of fai-make-nfsroot for additional configuration of the nfsroot. Can be changed with NFSROOT_HOOKS.
 .PD 0
 .TP
-.FN /etc/fai/apt/sources.list
-Copy this file to the NFSROOT.
+.FN /etc/fai/NFSROOT_files/
+Directory containing a file tree to be copied into the NFSROOT. This should especially contain a valid apt configuration!
 .PD 0
 .TP
 .FN /etc/fai/apt/keys/*.asc
