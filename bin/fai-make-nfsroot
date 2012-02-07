@@ -145,10 +145,12 @@ read_cfg "fai.conf" "nfsroot.conf"
 [ -z "$NFSROOT" ] && die 1 "\$NFSROOT is not set. Please check your settings in $cfdir/nfsroot.conf."
 [ -z "$TFTPROOT" ] && badupdateto32 "\$TFTPROOT is not set. Please check your settings in $cfdir/nfsroot.conf."
 [ -n "$KERNELPACKAGE" ] && badupdateto32 "The use of \$KERNELPACKAGE is deprecated. Please use $cfdir/NFSROOT now."
-[ ! -d "$cfdir/NFSROOT_files/etc/apt" ] && die 1 "$cfdir/NFSROOT_files/etc/apt/ does not exists. Can't continue."
+[ ! -d "$cfdir/NFSROOT.files/etc/apt" ] && die 1 "$cfdir/NFSROOT.files/etc/apt/ does not exists. Can't continue."
 [ -n "$FAI_BOOT" ] && die 1 "Variable \$FAI_BOOT is not supported any more. Will only set up TFTP environment."
 
 NFSROOT=$(readlink -m "${NFSROOT}/${NFSROOT_ROOTDIR}")
+NFSROOT_HOOKS="$cfdir"/NFSROOT.hooks
+NFSROOT_FILES="$cfdir"/NFSROOT.files
 
 export ROOTCMD="chroot $NFSROOT"
 export DEBIAN_FRONTEND=noninteractive
@@ -349,9 +351,10 @@ upgrading_nfsroot() {
 
     echo "Upgrading $NFSROOT"
     # add any 3rd party repository keys that you may need installed into the NFSROOT
-    if [ -d $cfdir/apt/keys ]; then
+    local keydir="$cfdir"/apt-keys
+    if [ -d "$keydir" ]; then
         local f
-        for f in `find $cfdir/apt/keys -type f -name *.asc`; do
+        for f in `find "$keydir" -type f -name '*.asc'`; do
             [ "$verbose" ] && echo "Adding APT key $(basename $f)"
             cat $f | $ROOTCMD apt-key add - >/dev/null
         done
@@ -398,7 +401,9 @@ EOF
     add_etc_hosts_entries
 
     # copy all NFSroot files into the nfsroot
-    cp -La $v $cfdir/NFSROOT_files/* $NFSROOT/
+    if [ -d "${NFSROOT_FILES}" ]; then
+	cp -La $v "${NFSROOT_FILES}"/* "$NFSROOT"/
+    fi
 
     # check for valid live.conf
     if [ "$NFSROOT_ROOTDIR" = "/live/filesystem.dir" ]; then
