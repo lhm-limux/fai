@@ -104,15 +104,15 @@ The FAI configuration file.
 The configuration file for fai-make-nfsroot.
 .PD 0
 .TP
-.FN /etc/fai/nfsroot-hooks/
-Directory containing shell scripts to be sourced at the end of fai-make-nfsroot for additional configuration of the nfsroot. Can be changed with NFSROOT_HOOKS.
+.FN /etc/fai/NFSROOT.hooks/
+Directory containing shell scripts to be sourced at the end of fai-make-nfsroot for additional configuration of the nfsroot.
 .PD 0
 .TP
-.FN /etc/fai/NFSROOT_files/
+.FN /etc/fai/NFSROOT.files/
 Directory containing a file tree to be copied into the NFSROOT. This should especially contain a valid apt configuration!
 .PD 0
 .TP
-.FN /etc/fai/apt/keys/*.asc
+.FN /etc/fai/apt-keys/*.asc
 Repository keys in .asc format found here will be installed into the NFSROOT.
 .PD 0
 .TP
