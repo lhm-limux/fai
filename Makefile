@@ -170,7 +170,8 @@ veryclean: clean
 
 install:
 	mkdir -p $(DESTDIR)/{sbin,man} $(DESTDIR)/etc/{modutils,apt/apt.conf.d}
-	mkdir -p $(DESTDIR)/usr/{sbin,bin} $(DESTDIR)/usr/lib/fai $(DESTDIR)/etc/fai/apt
+	mkdir -p $(DESTDIR)/usr/{sbin,bin} $(DESTDIR)/usr/lib/fai
+	mkdir -p $(DESTDIR)/etc/fai/NFSROOT.{hooks,files/etc/apt/keys}
 	mkdir -p $(DESTDIR)/etc/{init,init.d} $(DESTDIR)/usr/share/fai/{pixmaps/small,setup-storage}
 	install man/* $(DESTDIR)/man
 	pod2man -c '' -r '' -s8 bin/dhcp-edit > $(DESTDIR)/man/dhcp-edit.8
@@ -187,7 +188,7 @@ install:
 	install -m644 conf/fai.conf.defaults $(DESTDIR)/usr/share/fai/
 	install -m644 conf/nfsroot.conf $(DESTDIR)/etc/fai/
 	install -m644 conf/nfsroot.conf.defaults $(DESTDIR)/usr/share/fai/
-	install -m644 conf/sources.list $(DESTDIR)/etc/fai/apt/
+	install -m644 conf/sources.list $(DESTDIR)/etc/fai/NFSROOT.files/etc/apt/
 	install -m644 conf/NFSROOT $(DESTDIR)/etc/fai
 	install -m644 conf/upstart-fai.conf $(DESTDIR)/etc/init/fai.conf
 	install -m755 lib/fai-abort $(DESTDIR)/etc/init.d

@@ -239,7 +239,7 @@ if [ "$FAI_DEBMIRROR" ]; then
 fi
 
 # TODO: use -p to preserve sources.list
-sed -e 's/file:/copy:/' $cfdir/NFSROOT_files/etc/apt/sources.list >> $aptcache/etc/apt/sources.list
+sed -e 's/file:/copy:/' $cfdir/NFSROOT.files/etc/apt/sources.list >> $aptcache/etc/apt/sources.list
 
 echo "Getting package information"
 apt-get $qflag $aptoptions update >/dev/null
