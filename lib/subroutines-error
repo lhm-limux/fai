@@ -27,7 +27,7 @@
 #*********************************************************************
 
 ### BEGIN SUBROUTINE INFO
-# Provides-Var:      $task_error_msg
+# Provides-Var:      none
 # Required-Var:      $1
 # Suggests-Var:      $@
 # Short-Description: printf error messages
@@ -39,52 +39,124 @@
 fai_strerror() {
 
     local error_code=$1
-    local error_str
+    local str
+    local sevy
     shift
 
     case $error_code in
-        # Information
-        312) error_str="Tests failed" ;;
-        321) error_str="install_packages: packages missing" ;;
+        400) sevy=1; str="No debconf directory in config space. Skipping debconf preseeding." ;;
+        420) sevy=1; str="FAI scripts failed" ;;
+        421) sevy=1; str="install_packages: packages missing" ;;
+        471) sevy=1; str="install_packages failed: %d" ;;
+        472) sevy=1; str="install_packages: various error messages" ;;
+        474) sevy=1; str="Updatebase failed: %d" ;;
+        500) sevy=1; str="\$SERVER not defined. Can't change network boot configuration" ;;
+        501) sevy=1; str="%s failed. Can't call fai-chboot on the install server." ;;
+        502) sevy=1; str="Tests failed" ;;
+        503) sevy=1; str="Deprecated function %s() will be removed: use '%s' instead" ;;
 
-        # Warning
-        400) error_str="No debconf directory in config space. Skipping debconf preseeding." ;;
-        420) error_str="FAI scripts failed" ;;
-        471) error_str="install_packages failed: %d" ;;
-        472) error_str="install_packages: various error messages" ;;
-        474) error_str="Updatebase failed: %d" ;;
-        500) error_str="\$SERVER not defined. Can't change network boot configuration" ;;
-        501) error_str="%s failed. Can't call fai-chboot on the install server." ;;
+        700) sevy=2; str="install_packages: dpkg errors" ;;
+        750) sevy=2; str="No %s/fstab created." ;;
 
-        # Errors
-        700) error_str="install_packages: dpkg errors" ;;
-        750) error_str="No %s/fstab created." ;;
+        801) sevy=3; str="\$FAI_DEBOOTSTRAP undefined. Aborting" ;;
+        803) sevy=3; str="Debootstraping failed" ;;
+        810) sevy=3; str="Can't mount %s" ;;
+        850) sevy=3; str="Partitioning tool did not create %s/disk_var.sh file." ;;
+        860) sevy=3; str="mountdisks failed" ;;
+        881) sevy=3; str="%s - configspace update failed: %d" ;;
+        882) sevy=3; str="%s - configspace checkout failed: %d" ;;
+        883) sevy=3; str="%s - configspace exists, but is not from same origin. Please delete manually." ;;
+        884) sevy=3; str="%s - subprotocol '%s' not implemented" ;;
+        885) sevy=3; str="%s - wget error %d, checksum file %s missing" ;;
+        886) sevy=3; str="%s - wget error %d, configuration space tarball %s missing" ;;
+        887) sevy=3; str="%s - md5sum error %d, checksum mismatch." ;;
+        888) sevy=3; str="%s - ftar failed on config space unpacking" ;;
+        889) sevy=3; str="%s - configspace mount failed" ;;
 
-        # Critical errors
-        801) error_str="\$FAI_DEBOOTSTRAP undefined. Aborting" ;;
-        803) error_str="Debootstraping failed" ;;
-        810) error_str="Can't mount %s" ;;
-        850) error_str="Partitioning tool did not create %s/disk_var.sh file." ;;
-        860) error_str="mountdisks failed" ;;
-        881) error_str="%s - configspace update failed: %d" ;;
-        882) error_str="%s - configspace checkout failed: %d" ;;
-        883) error_str="%s - configspace exists, but is not from same origin. Please delete manually." ;;
-        884) error_str="%s - subprotocol '%s' not implemented" ;;
-        885) error_str="%s - wget error %d, checksum file %s missing" ;;
-        886) error_str="%s - wget error %d, configuration space tarball %s missing" ;;
-        887) error_str="%s - md5sum error %d, checksum mismatch." ;;
-        888) error_str="%s - ftar failed on config space unpacking" ;;
-        889) error_str="%s - configspace mount failed" ;;
+        900) sevy=3; str="No action in \$FAI_ACTION defined." ;;
+        901) sevy=3; str="Cowardly refusing to run a FAI installation on a running system." ;;
+        902) sevy=3; str="User defined action /hooks/%s not found." ;;
+        903) sevy=3; str="Try to read classes from /var/lib/fai/FAI_CLASSES. Failed. Aborting." ;;
+        904) sevy=3; str="Task %s failed. Please look at the log files in %s for errors." ;;
+        905) sevy=3; str="Lock file %s found. Another fai softupdate is already running. Aborting." ;;
+        906) sevy=3; str="Problems accessing the config space." ;;
+        907) sevy=3; str="Subdirectory 'class' missing in config space (%s)." ;;
 
-        900) error_str="No action in \$FAI_ACTION defined." ;;
-        901) error_str="Cowardly refusing to run a FAI installation on a running system." ;;
-        902) error_str="User defined action /hooks/%s not found." ;;
-        903) error_str="Try to read classes from /var/lib/fai/FAI_CLASSES. Failed. Aborting." ;;
-        904) error_str="Task %s failed. Please look at the log files in %s for errors." ;;
-        905) error_str="Lock file %s found. Another fai softupdate is already running. Aborting." ;;
-        906) error_str="Problems accessing the config space." ;;
-        907) error_str="Subdirectory 'class' missing in config space (%s)." ;;
+        *)
+             sevy=3; str="Unknown error code." ;;
     esac
 
-    task_error_msg=$(printf "$error_str" $@)
+    echo $sevy $(printf "$str" "$@")
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### BEGIN SUBROUTINE INFO
+# Provides-Var:      $?
+# Required-Var:      $FAI_DIE_SEVERITY
+# Short-Description: return severity as int (for comparisions)
+### END SUBROUTINE INFO
+
+fai_get_die_severity() {
+
+    local die_severity
+    case $FAI_DIE_SEVERITY in
+        warn)  die_severity=1 ;;
+        error) die_severity=2 ;;
+        fatal) die_severity=3 ;;
+        *)
+            echo "Unknown FAI_DIE_SEVERITY: $FAI_DIE_SEVERITY" >&2
+            die_severity=3
+            ;;
+    esac
+
+    return $die_severity
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### BEGIN SUBROUTINE INFO
+# Provides-Var:      $task_error_code, $task_error_sevy, $task_error_msg, $task_error_die
+# Required-Var:      "$@" of task error handler or hook
+# Short-Description: verify and evaluate error handler arguments
+### END SUBROUTINE INFO
+
+fai_verify_error() {
+
+    local error_code="$1" ; shift
+    local strerror
+
+    case $error_code in
+    -1) : ;;
+    *[![:digit:].]*)
+        echo "Error code is no number: $error_code"
+        return 1
+        ;;
+    esac
+
+    if [ $error_code -eq 0 ]; then
+        return 1
+    else if [ $error_code -gt 0 ]; then
+        [ $error_code -eq ${task_error_code:-0} ] && return 0
+        strerror=$(fai_strerror $error_code "$@")
+        set -- $strerror
+    else
+        if [ $# -lt 2 ]; then
+            echo "User error has no severity or message"
+            return 1
+        fi
+    fi ; fi
+
+    task_error_code=$error_code
+    task_error_sevy=$1 ; shift
+    task_error_msg="$@"
+
+    fai_get_die_severity
+    local die_severity=$?
+
+    local skipfile="$LOGDIR/skip.$task_error_code"
+    if [ \( $task_error_sevy -lt $die_severity -a $task_error_code -lt $STOP_ON_ERROR \) \
+            -o -f "$skipfile" ]; then
+        task_error_die=0
+    else
+        task_error_die=1
+    fi
+
+    return 0
 }

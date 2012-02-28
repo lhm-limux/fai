@@ -179,7 +179,7 @@ stop_fai_installation() {
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### BEGIN SUBROUTINE INFO
-# Provides-Var:      $task_error_code $task_error_func $task_error_msg
+# Provides-Var:      none
 # Required-Var:      $1
 # Suggests-Var:      $2
 # Short-Description: error task handler
@@ -190,24 +190,46 @@ stop_fai_installation() {
 
 task_error() {
 
-    task_error_code=$1
-    shift
+    local -a backtrace
+    local error_taskname
+    local error_backtrace
 
     # Remove error handler from backtrace
-    local -a backtrace
     backtrace=("${FUNCNAME[@]}")
     unset backtrace[0]
     unset backtrace[1]
-    task_error_func="${backtrace[*]}"
-    for item in $task_error_func; do
-        taskname=${item#task_}
-        [ "${taskname}" != "${item}" ] && break
+    error_backtrace="${backtrace[*]}"
+    for item in $error_backtrace; do
+        error_taskname=${item#task_}
+        [ "${error_taskname}" != "${item}" ] && break
     done
 
-    # Get the error message in $task_error_msg
-    fai_strerror $@
+    fai_verify_error "$@"
+    [ $? -ne 0 ] && return
 
-    [ $task_error_code -ge $STOP_ON_ERROR ] && stop_fai_installation
+    # Remove error skipfile, if available
+    local skipfile="$LOGDIR/skip.$task_error_code"
+    rm -f "$skipfile"
+
+    local error_sevy_str
+    case $task_error_sevy in
+        1) error_sevy_str="warn" ;;
+        2) error_sevy_str="error" ;;
+        3) error_sevy_str="fatal" ;;
+        *)
+            echo "Unknown error severity: $task_error_sevy" >&2
+            error_sevy_str="fatal"
+            task_error_sevy=3
+            ;;
+    esac
+
+    local sendmon_msg="$error_taskname $task_error_code $error_sevy_str:$task_error_msg"
+    if [ $task_error_die -eq 0 ]; then
+        sendmon "TASKERROR $sendmon_msg"
+        return 0
+    fi
+
+    stop_fai_installation
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### BEGIN SUBROUTINE INFO
@@ -284,11 +306,8 @@ task() {
     else
         echo "Calling task_$taskname"
         sendmon "TASKBEGIN $taskname"
-        # tasks can set these variables to indicate an error
+        unset task_error_sevy task_error_msg
         task_error_code=0
-        task_error_func=''
-        task_error_msg=''
-
         task_$taskname "$@"
         sendmon "TASKEND $taskname $task_error_code"
         if [ "$task_error_code" -ne 0 ] ; then
@@ -561,7 +580,7 @@ task_tests() {
         # check if any test failed
         if [ -f $LOGDIR/test.log ]; then
             if grep -q "FAILED with " $LOGDIR/test.log; then
-                task error 312
+                task error 502
                 return 1
             fi
         fi
@@ -1098,7 +1117,7 @@ task_instsoft() {
     fi
     # This almost indicates an error
     egrep "^E:" $LOGDIR/software.log && task error 472
-    grep "Couldn't find any package whose name or description matched" $LOGDIR/software.log && task error 321
+    grep "Couldn't find any package whose name or description matched" $LOGDIR/software.log && task error 421
     grep -q "E: Sub-process /usr/bin/dpkg returned an error code" $LOGDIR/software.log && task error 700
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
