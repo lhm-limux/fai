@@ -12,7 +12,7 @@
 ### END SUBROUTINE INFO
 
 if [ -z "$FAI_CONFIG_SRC" ]; then
-        sendmon "TASKERROR get_fai_dir 21"
+        sendmon "TASKERROR get-config-dir 21"
         echo "ERROR: No URL defined for the config space." >&2
         echo "ERROR: Set \$FAI_CONFIG_SRC or use option -s." >&2
         exit 21
@@ -29,32 +29,27 @@ echo "FAI_CONFIG_SRC is set to $FAI_CONFIG_SRC"
 method=$(expr match "$FAI_CONFIG_SRC" '\([^+]*\).*://')
 
 if [ -z "$method" ]; then
-        sendmon "TASKERROR get_fai_dir 22"
-        echo "Error in get-config-dir: scheme undefined."  >&2
+        sendmon "TASKERROR get-config-dir 24"
+        echo "Error in get-config-dir: scheme undefined." >&2
         exit 24
-    echo
 fi
 
 [ -z "$FAI" -a $method != "file" ] && echo "WARNING: \$FAI is undefined. Let's see if it still works."
 
 # run get-config-dir-$method script if it exists
-if which get-config-dir-$method &>/dev/null ; then
-        get-config-dir-$method
+export GETCONFIG_TOOL="get-config-dir-$method"
+if which "$GETCONFIG_TOOL" &>/dev/null ; then
+        $GETCONFIG_TOOL
 else
-        sendmon "TASKERROR get_fai_dir 22"
-        echo "Error: get-config-dir-"$method "not found"  >&2
+        sendmon "TASKERROR get-config-dir 22"
+        echo "Error: $GETCONFIG_TOOL not found" >&2
         exit 22
-fi
-
-if [ $method = "file" ]; then
-    localpath=$(expr match "$FAI_CONFIG_SRC" '.*://\(/.*\)')
-    export FAI=$localpath
 fi
 
 ln -sf $FAI /var/run/fai/current_config
 if [ ! -d $FAI/class ]; then
-        echo "WARNING: directory $FAI/class not found."  >&2
-        sendmon "TASKERROR get_fai_dir 23"
+        echo "WARNING: directory $FAI/class not found." >&2
+        sendmon "TASKERROR get-config-dir 23"
         exit 23
 fi
 exit 0

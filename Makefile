@@ -54,6 +54,7 @@ BASH_SCRIPTS = \
 	lib/mount2dir \
 	lib/prcopyleft \
 	lib/subroutines \
+	lib/subroutines-error \
 	lib/subroutines-tools \
 	lib/task_sysinfo \
 	lib/updatebase

@@ -1,0 +1,90 @@
+#!/bin/sh
+
+#*********************************************************************
+#
+# subroutines-error -- get strings for error codes
+#
+# This script is part of FAI (Fully Automatic Installation)
+# (c) 2011 by Jan-Marek Glogowski, glogow@fbihome.de
+# Landeshauptstadt München
+#
+#*********************************************************************
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# A copy of the GNU General Public License is available as
+# `/usr/share/common-licences/GPL' in the Debian GNU/Linux distribution
+# or on the World Wide Web at http://www.gnu.org/copyleft/gpl.html.  You
+# can also obtain it by writing to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+#*********************************************************************
+
+### BEGIN SUBROUTINE INFO
+# Provides-Var:      $task_error_msg
+# Required-Var:      $1
+# Suggests-Var:      $@
+# Short-Description: printf error messages
+# Long-Description:
+#   $1 = the FAI error code
+#   $@ = printf error message arguments
+### END SUBROUTINE INFO
+
+fai_strerror() {
+
+    local error_code=$1
+    local error_str
+    shift
+
+    case $error_code in
+        # Information
+        312) error_str="Tests failed" ;;
+        321) error_str="install_packages: packages missing" ;;
+
+        # Warning
+        400) error_str="No debconf directory in config space. Skipping debconf preseeding." ;;
+        420) error_str="FAI scripts failed" ;;
+        471) error_str="install_packages failed: %d" ;;
+        472) error_str="install_packages: various error messages" ;;
+        474) error_str="Updatebase failed: %d" ;;
+        500) error_str="\$SERVER not defined. Can't change network boot configuration" ;;
+        501) error_str="%s failed. Can't call fai-chboot on the install server." ;;
+
+        # Errors
+        700) error_str="install_packages: dpkg errors" ;;
+        750) error_str="No %s/fstab created." ;;
+
+        # Critical errors
+        801) error_str="\$FAI_DEBOOTSTRAP undefined. Aborting" ;;
+        803) error_str="Debootstrapping failed" ;;
+        810) error_str="Can't mount %s" ;;
+        850) error_str="Partitioning tool did not create %s/disk_var.sh file." ;;
+        860) error_str="mountdisks failed" ;;
+        881) error_str="%s - configspace update failed: %d" ;;
+        882) error_str="%s - configspace checkout failed: %d" ;;
+        883) error_str="%s - configspace exists, but is not from same origin. Please delete manually." ;;
+        884) error_str="%s - subprotocol '%s' not implemented" ;;
+        885) error_str="%s - wget error %d, checksum file %s missing" ;;
+        886) error_str="%s - wget error %d, configuration space tarball %s missing" ;;
+        887) error_str="%s - md5sum error %d, checksum mismatch." ;;
+        888) error_str="%s - ftar failed on config space unpacking" ;;
+        889) error_str="%s - configspace mount failed" ;;
+
+        900) error_str="No action in \$FAI_ACTION defined." ;;
+        901) error_str="Cowardly refusing to run a FAI installation on a running system." ;;
+        902) error_str="User defined action /hooks/%s not found." ;;
+        903) error_str="Try to read classes from /var/lib/fai/FAI_CLASSES. Failed. Aborting." ;;
+        904) error_str="Task %s failed. Please look at the log files in %s for errors." ;;
+        905) error_str="Lock file %s found. Another fai softupdate is already running. Aborting." ;;
+        906) error_str="Problems accessing the config space." ;;
+        907) error_str="Subdirectory 'class' missing in config space (%s)." ;;
+    esac
+
+    task_error_msg=$(printf "$error_str" $@)
+}
