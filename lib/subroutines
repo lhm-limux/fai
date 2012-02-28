@@ -256,6 +256,11 @@ task() {
     local taskname=$1
     shift
 
+    # Prevent multiple / recursive calls of tasks
+    local runlock="/var/run/fai/runlock.$taskname"
+    [ -f "$runlock" ] && return
+    echo > "$runlock"
+
     [ -f $LOGDIR/skip.$taskname ] || call_hook $taskname "$@"
 
     if [ -f $LOGDIR/skip.$taskname ]; then
@@ -277,6 +282,9 @@ task() {
             echo "Exit code task_$taskname: $task_error_code" >&2
         fi
     fi
+
+    # Remove run task lock for errors
+    [ $taskname = "error" ] && rm -f "$runlock"
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### BEGIN SUBROUTINE INFO
