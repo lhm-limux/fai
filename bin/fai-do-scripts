@@ -34,7 +34,9 @@
 # If class is a directory, execute all $class/[0-9][0-9]* scripts in
 # it, but do not execute files ending in ~
 
+exitcode=0
 maxstatus=0
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 savemaxstatus() {
 
@@ -64,10 +66,12 @@ call_conf() {
     cd $1
     for class in $classes ; do
         [ -x $class -a -f $class ] && do_script $class
+        [ "${exit_on_error}" -a $exitcode -ne 0 ] && return
         if [ -d $class ]; then
-           for f in $(echo $class/[0-9][0-9]* ) ; do
-               [ -x $f -a -f $f ] && do_script $f
-           done
+            for f in $(run-parts --list --regex='^[0-9][0-9]' "$class") ; do
+                [ -x $f -a -f $f ] && do_script $f
+                [ "${exit_on_error}" -a $exitcode -ne 0 ] && return
+            done
         fi
     done
 }
@@ -194,11 +198,12 @@ EOF
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  # main program
 
-while getopts "nhL:" opt ; do
+while getopts "enhL:" opt ; do
     case "$opt" in
         h) usage 0 ;;
         L) LOGDIR=$OPTARG; export LOGDIR ;;
         n) fake=1 ;;
+        e) exit_on_error=1 ;;
     esac
 done
 shift $(($OPTIND - 1))
