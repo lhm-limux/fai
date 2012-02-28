@@ -34,34 +34,19 @@
 . /usr/lib/fai/subroutines-error
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-### BEGIN SUBROUTINE INFO
-# Provides-Var:      none
-# Required-Var:      $FAI_DIE_SLEEPING $FAI_ACTION
-# Short-Description: echo comment and exit installation
-### END SUBROUTINE INFO
 
 die() {
 
-    echo
-    echo "FAI DIE start"
-
-    sendmon "TASKDIE $taskname $task_error_code $task_error_msg"
-    task savelog
-
-    echo "Error in task $taskname. Traceback: $task_error_func" >&2
-    [ -n "$task_error_msg" ] && echo "$task_error_msg" >&2
-
-    if [ $FAI_DIE_SLEEPING -lt 0 ]; then
-        if [ "X$FAI_ACTION" = "Xinstall" ]; then
-            bash -i
-        fi
-    else
-        sleep $FAI_DIE_SLEEPING
-    fi
-
-    task faiend
-    exit 99
+    task error 503 "$FUNCNAME" "fai_fatal"
+    fai_fatal "$@"
 }
+
+stop_fai_installation() {
+
+    task error 503 "$FUNCNAME" "fai_fatal"
+    fai_fatal "$@"
+}
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 defnop() {
 
@@ -173,11 +158,6 @@ wait_for_jobs() {
     done
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-stop_fai_installation() {
-
-    die
-}
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### BEGIN SUBROUTINE INFO
 # Provides-Var:      none
 # Required-Var:      $1 = error code
@@ -273,7 +253,25 @@ task_error() {
         return 0
     fi
 
-    stop_fai_installation
+    echo >&2
+    echo "FAI DIE start" >&2
+
+    sendmon "TASKDIE $sendmon_msg"
+    task savelog
+
+    echo "Error in task $taskname. Traceback: $task_error_func" >&2
+    [ -n "$task_error_msg" ] && echo "$task_error_msg" >&2
+
+    if [ $FAI_DIE_SLEEPING -lt 0 ]; then
+        if [ "X$FAI_ACTION" = "Xinstall" ]; then
+            bash -i
+        fi
+    else
+        sleep $FAI_DIE_SLEEPING
+    fi
+
+    task faiend
+    exit 99
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### BEGIN SUBROUTINE INFO
