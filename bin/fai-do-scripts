@@ -76,6 +76,21 @@ call_conf() {
     done
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+_do_execute() {
+    local file="$1"
+    local stype="$2"
+    local logfile="$LOGDIR/${3}.log"
+    shift ; shift ; shift
+
+    echo "Executing $stype: $file" | tee -a "$configurelog"
+    echo "=====   $stype: $file   =====" > "$scriptlog" 2>&1
+    $@ >> "$scriptlog" 2>&1
+    savemaxstatus $?
+    fc_check_status $file $exitcode | tee -a "$scriptlog" "$configurelog"
+    cat "$scriptlog" >> "$logfile"
+    rm -f "$scriptlog"
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 do_script() {
 
     # execute scripts and save their output in log files
@@ -115,67 +130,35 @@ do_script() {
     case $filetype in
 
         *"POSIX shell script"*|*"executable shell script"*|*"/bash script"*|*"Bourne shell script"*|*"Bourne-Again shell script"*|*"zsh script"*)
-            echo "Executing   $shelldebug shell: $file"
-            echo "=====   shell: $file   =====" >> $LOGDIR/shell.log 2>&1
-            $shelldebug ./$file >> $LOGDIR/shell.log 2>&1
-            savemaxstatus $?
-            fc_check_status $file $exitcode | tee -a $LOGDIR/shell.log
+            _do_execute "$file" "$shelldebug shell" "shell" $shelldebug ./$file
         ;;
 
         *"cf-agent"*)
-            echo "Executing cf-agent: $file"
-            echo "=====   cf-agent: $file   =====" >> $LOGDIR/cfagent.log 2>&1
-            ./$file $cfagentdebug -KI -D${cfclasses} >> $LOGDIR/cfagent.log 2>&1
-            savemaxstatus $?
-            fc_check_status $file $exitcode | tee -a $LOGDIR/cfagent.log
+            _do_execute "$file" "cf-agent" "cfagent" ./$file $cfagentdebug -KI -D${cfclasses}
         ;;
 
         *"cfagent"*)
-            echo "Executing cfagent: $file"
-            echo "=====   cfagent: $file   =====" >> $LOGDIR/cfagent.log 2>&1
-            ./$file $cfagentdebug -qKI -D${cfclasses} >> $LOGDIR/cfagent.log 2>&1
-            savemaxstatus $?
-            fc_check_status $file $exitcode | tee -a $LOGDIR/cfagent.log
+            _do_execute "$file" "cfagent" "cfagent" ./$file $cfagentdebug -qKI -D${cfclasses}
         ;;
 
         *"cfengine script"*)
-            echo "Executing cfengine: $file"
-            echo "=====   cfengine: $file   =====" >> $LOGDIR/cfengine.log 2>&1
-            ./$file -K -v -f $file -D${cfclasses} >> $LOGDIR/cfengine.log 2>&1
-            savemaxstatus $?
-            fc_check_status $file $exitcode | tee -a $LOGDIR/cfengine.log
+            _do_execute "$file" "cfengine" "cfengine" ./$file -K -v -f $file -D${cfclasses}
         ;;
 
         *[Pp]erl*script*)
-            echo "Executing    perl: $file"
-            echo "=====   perl: $file   =====" >> $LOGDIR/perl.log 2>&1
-            ./$file >> $LOGDIR/perl.log 2>&1
-            savemaxstatus $?
-            fc_check_status $file $exitcode | tee -a $LOGDIR/perl.log
+            _do_execute "$file" "perl" "perl" ./$file
         ;;
 
         *"expect script"*)
-            echo "Executing  expect: $file"
-            echo "=====   expect: $file   =====" >> $LOGDIR/expect.log 2>&1
-            ./$file >> $LOGDIR/expect.log 2>&1
-            savemaxstatus $?
-            fc_check_status $file $exitcode | tee -a $LOGDIR/expect.log
+            _do_execute "$file" "expect" "expect" ./$file
         ;;
 
         *[Pp]ython*script*)
-            echo "Executing  python: $file"
-            echo "=====   python: $file   =====" >> $LOGDIR/python.log 2>&1
-            ./$file >> $LOGDIR/python.log 2>&1
-            savemaxstatus $?
-            fc_check_status $file $exitcode | tee -a $LOGDIR/python.log
+            _do_execute "$file" "python" "python" ./$file
         ;;
 
         *[Rr]uby*script*)
-            echo "Executing ruby: $file"
-            echo "=====   ruby: $file   =====" >> $LOGDIR/ruby.log 2>&1
-            ./$file >> $LOGDIR/ruby.log 2>&1
-            savemaxstatus $?
-            fc_check_status $file $exitcode | tee -a $LOGDIR/ruby.log
+            _do_execute "$file" "ruby" "ruby" ./$file
         ;;
 
         *) echo "File $file has unsupported type $filetype." ;;
@@ -214,6 +197,9 @@ if [ "x$classes" = "x" ]; then
 fi
 
 [ X$debug = X1 ] && cfagentdebug=-v
+
+scriptlog="$LOGDIR/script.log"
+configurelog="$LOGDIR/configure.log"
 
 call_conf $1
 # move error number from child scripts to 100+x if any error happened
