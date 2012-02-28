@@ -119,6 +119,10 @@ Syntax: <host>:<exported directory>
 Integer value to sleep N seconds in case of a fatal error (die).
 Defaults to -1, which will result in an interactive shell instead of a sleep.
 
+.TP
+\fBFAI_DIE_SEVERITY\fP Minimal error severity to abort FAI.
+Valid values are warn, error and fatal. Defaults to fatal.
+
 .SH SEE ALSO
 
 .BR fai (8),
