@@ -15,6 +15,7 @@ usr/lib/fai/get-config-dir*
 usr/lib/fai/mkramdisk
 usr/lib/fai/prcopyleft
 usr/lib/fai/subroutines
+usr/lib/fai/subroutines-error
 usr/lib/fai/subroutines-tools
 usr/lib/fai/updatebase
 usr/sbin/fai

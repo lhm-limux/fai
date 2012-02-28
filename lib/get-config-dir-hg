@@ -25,7 +25,7 @@ case $protocol in
                 hgurl="https://$hgpath"
                 ;;
         *)
-                echo "get-config-dir-hg: protocol $protocol not implemented"
+                task error 884 "$GETCONFIG_TOOL" "$protocol"
                 exit 1
                 ;;
 esac
@@ -35,11 +35,11 @@ if [ -d "$FAI/.hg" ] ; then
    echo "Updating hg copy in $FAI"
    cd $FAI
    hg pull
-   task error 881 $?
+   exitcode_error_getconfig $? 881
 else 
    echo "Checking out from hg"
    # cloning into an existing directory is not allowed
    if [ -d $FAI ]; then rmdir $FAI; fi
    hg clone $hgurl $FAI 
-   task error 882 $?
+   exitcode_error_getconfig $? 882
 fi
