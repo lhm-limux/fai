@@ -467,7 +467,11 @@ task_mountdisks() {
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 task_configure() {
 
-    fai-do-scripts $FAI/scripts
+    if [ $FAI_CONFIGURE_RUN_ALL -ne 0 ]; then
+        fai-do-scripts $FAI/scripts
+    else
+        fai-do-scripts -e $FAI/scripts
+    fi
     task_error 420 $?
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
