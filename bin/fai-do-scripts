@@ -161,7 +161,13 @@ do_script() {
             _do_execute "$file" "ruby" "ruby" ./$file
         ;;
 
-        *) echo "File $file has unsupported type $filetype." ;;
+        *)
+            if [ "${execute_unknown}" ]; then
+                _do_execute "$file" "executable" "executable" ./$file
+            else
+                echo "Skipping $file, as it has an unsupported type $filetype." | tee -a "$configurelog"
+            fi
+            ;;
     esac
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -187,6 +193,7 @@ while getopts "enhL:" opt ; do
         L) LOGDIR=$OPTARG; export LOGDIR ;;
         n) fake=1 ;;
         e) exit_on_error=1 ;;
+        u) execute_unknown=1 ;;
     esac
 done
 shift $(($OPTIND - 1))
