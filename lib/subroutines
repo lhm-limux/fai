@@ -294,12 +294,17 @@ define_fai_flags() {
                 ;;
             wait) flag_nowait=0 ;;
             nowait) flag_wait=0 ;;
+            verbose) v=-v ;;
+            debug) d=-d ;;
         esac
     done
     [ "$flag_verbose" ] && verbose=1 # for backward compability
     [ "$flag_debug" ]   && debug=1   # for backward compability
     [ "$flag_poweroff" -o "$flag_reboot" ] && flag_nowait=1
     [ "$flag_wait" = "1" ] && flag_nowait=0
+
+    # Unexport $v $d, so these won't pollute the exported environment
+    export -n v d
 
     if [ "$FAI_ABORT" != "poweroff" ]; then
         unset flag_poweroff
