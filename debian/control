@@ -12,8 +12,8 @@ Homepage: http://fai-project.org
 
 Package: fai-client
 Architecture: all
-Depends: perl, file, libapt-pkg-perl, iproute
-Recommends: debconf-utils, libgraph-perl
+Depends: perl, file, libapt-pkg-perl, iproute, libgraph-perl
+Recommends: debconf-utils
 Suggests: logtail
 Description: Fully Automatic Installation client package
  FAI is a non-interactive system to install, customize and manage
