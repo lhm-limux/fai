@@ -54,6 +54,7 @@ fai_strerror() {
         501) sevy=1; str="%s failed. Can't call fai-chboot on the install server." ;;
         502) sevy=1; str="Tests failed" ;;
         503) sevy=1; str="Deprecated function %s() will be removed: use '%s' instead" ;;
+        550) sevy=1; str="No APT sources.lists in target. Package installation not ppossible!" ;;
 
         700) sevy=2; str="install_packages: dpkg errors" ;;
         750) sevy=2; str="No %s/fstab created." ;;
