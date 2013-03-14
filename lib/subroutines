@@ -1076,22 +1076,23 @@ task_repository () {
     # some generale network files are needed on the client
     # resolv.conf is needed, /etc/hosts is useful in /target
     # use a file from the config space or from /etc inside the nfsroot
-    if ! fcopy -BMv /etc/resolv.conf ; then
-        if test -L $FAI_ROOT/etc/resolv.conf && \
-            [ $(readlink -f /etc/resolv.conf) = $(readlink -f $FAI_ROOT/etc/resolv.conf) ] ; then
-            echo "/etc/resolv.conf + $FAI_ROOT/etc/resolv.conf are already pointing to the same file."
-        else
-            cp -v /etc/resolv.conf $FAI_ROOT/etc
+    for FILE in /etc/resolv.conf /etc/hosts ; do
+        if ! fcopy -BMv "$FILE" ; then
+            if [ "$(readlink -f '$FILE')" != "$(readlink -f '${FAI_ROOT}$FILE')" ]; then
+                cp -v "$FILE" "${FAI_ROOT}$FILE"
+            fi
         fi
-    fi
-    fcopy -BMv /etc/hosts || cp -v /etc/hosts $FAI_ROOT/etc
+    done
 
-    # apt specific things
-    fcopy -BMv /etc/apt/sources.list || cp -v $FAI_ETC_DIR/apt/sources.list $FAI_ROOT/etc/apt
-    if fcopy -BMv /etc/apt/preferences; then
-        [ -f $FAI_ETC_DIR/apt/preferences ] && cp -v $FAI_ETC_DIR/apt/preferences $FAI_ROOT/etc/apt
-    fi
-    fcopy -Mir /etc/apt # copy all other apt config files from the config space
+    # Copy FAI apt config files
+    for FILE in apt/sources.list apt/preferences ; do
+        if [ -f "${FAI_ETC_DIR}/$FILE" ]; then
+            cp -v "${FAI_ETC_DIR}/$FILE" "${FAI_ROOT}/etc/$FILE"
+        fi
+    done
+
+    # Copy all apt config files from the config space
+    fcopy -BMirv /etc/apt
 
     if [ X$FAI_ALLOW_UNSIGNED = X1 ]; then
         cat > $FAI_ROOT/etc/apt/apt.conf.d/10fai <<EOF
@@ -1101,8 +1102,8 @@ EOF
     fi
 
     # add apt keys for signed repositories
-
     declare -A keys
+
     # remember all available *.asc files
     for f in `cd $FAI/package_config; ls *.asc 2>/dev/null`; do
         keys["$f"]=1
@@ -1123,6 +1124,13 @@ EOF
             echo "$i"
         done
         echo "You have to rename them to match a class name."
+    fi
+
+    # warn about missing sources.list files
+    if ls -1 "$FAI_ROOT"/etc/apt/sources.lists \
+            "$FAI_ROOT"/etc/apt/sources.list.d/* 2>/dev/null | wc -l
+    then
+        task error 550
     fi
 
     # mount Debian mirror via NFS if needed
