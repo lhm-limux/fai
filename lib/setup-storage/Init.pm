@@ -341,14 +341,7 @@ sub make_device_name {
 sub internal_error {
 
   my ($error_msg) = @_;
-
-  use Carp;
-  $Carp::CarpLevel = 1;
-  confess <<EOF;
-INTERNAL ERROR in setup-storage:
-$error_msg
-Please report this error to the Debian Bug Tracking System.
-EOF
+  die "$error_msg";
 }
 
 1;
