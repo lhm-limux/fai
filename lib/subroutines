@@ -238,6 +238,8 @@ call_hook() {
     shift
 
     local cl hfile
+    local waitflag=0
+    [ ${flag_waithooks:=0} -eq 1 ] && waitflag=1
 
     for cl in $classes; do
         hfile=$FAI/hooks/$hook.$cl
@@ -255,6 +257,11 @@ call_hook() {
             # execute the hook
             $hfile $d "$@"
             check_status $hook.$cl $?
+            if [ $waitflag -eq 1 ]; then
+                echo "Press <ENTER> to continue"
+                local readdummy
+                read readdummy
+            fi
         fi
         if [ -x $hfile.source ]; then
             echo "Source hook: $hook.$cl.source"
@@ -262,6 +269,11 @@ call_hook() {
             # source this hook
             . $hfile.source $d "$@"
             check_status $hook.$cl.source $?
+            if [ $waitflag -eq 1 ]; then
+                echo "Press <ENTER> to continue"
+                local readdummy
+                read readdummy
+            fi
         fi
     done
 }
