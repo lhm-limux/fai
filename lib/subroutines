@@ -468,11 +468,10 @@ task_mountdisks() {
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 task_configure() {
 
-    if [ $FAI_CONFIGURE_RUN_ALL -ne 0 ]; then
-        fai-do-scripts $FAI/scripts
-    else
-        fai-do-scripts -e $FAI/scripts
-    fi
+    local cmdopts=""
+    [ ${flag_waitscripts:=0} -ne 0 ] && cmdopts="$cmdopts -w"
+    [ ${FAI_CONFIGURE_RUN_ALL:=1} -eq 0 ] && cmdopts="$cmdopts -e"
+    fai-do-scripts $cmdopts $FAI/scripts
     task_error 420 $?
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
