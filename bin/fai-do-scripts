@@ -56,8 +56,17 @@ fc_check_status() {
     else
         res="FAILED with exit code $st."
     fi
+
     # put result in the log file and write to stdout
-    printf "%-20s $res\n\n" $cmd | tee -a $LOGDIR/status.log
+    printf "%-20s $res\n" $cmd | tee -a $LOGDIR/status.log
+    if [ ${wait_scripts:=0} -eq 1 ]; then
+        echo "Press <ENTER> to continue"
+        local readdummy
+        read readdummy
+        echo >> $LOGDIR/status.log
+    else
+        echo | tee -a $LOGDIR/status.log
+    fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 call_conf() {
@@ -186,13 +195,14 @@ EOF
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
  # main program
 
-while getopts "enhL:" opt ; do
+while getopts "enhL:w" opt ; do
     case "$opt" in
         h) usage 0 ;;
         L) LOGDIR=$OPTARG; export LOGDIR ;;
         n) fake=1 ;;
         e) exit_on_error=1 ;;
         u) execute_unknown=1 ;;
+        w) wait_scripts=1 ;;
     esac
 done
 shift $(($OPTIND - 1))
