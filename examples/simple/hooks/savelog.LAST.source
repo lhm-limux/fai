@@ -42,7 +42,7 @@ Error: Driver 'pcspkr' is already registered, aborting
 :+ error=0
 :+ trap error=
 task_error_func=
-STOP_ON_ERROR=
+FAI_DIE_ON_ERROR=
 courier-webadmin
 gstreamer0.10-plugins-bad
 ibwebadmin

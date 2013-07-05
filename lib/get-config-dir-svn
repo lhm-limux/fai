@@ -43,7 +43,7 @@ case $protocol in
     fi
                 ;;
         *)
-                echo "get-config-dir-svn: protocol $protocol not implemented"
+                task error 884 "$GETCONFIG_TOOL" "$protocol"
                 exit 1
                 ;;
 esac
@@ -56,15 +56,14 @@ if [ -d "$FAI/.svn" ] ; then
         echo "Updating SVN in $FAI"
         cd $FAI
         svn up $user $pass | grep -v 'Updated to revision' > $LOGDIR/getconf.log
-        task_error 881 ${PIPESTATUS[0]}
+        exitcode_error_getconfig ${PIPESTATUS[0]} 881
     else
         echo "$FAI already contains a svn repository, but it is not from $svnurl!" >&2
         echo "Please delete $FAI manually. Fatal error." >&2
-        task_error 883
+        exitcode_error_getconfig $? 883
     fi
 else
    echo "Checking out SVN"
    svn co $user $pass $svnurl $FAI | grep -v 'Checked out revision' > $LOGDIR/getconf.log
-   task_error 882 ${PIPESTATUS[0]}
+   exitcode_error_getconfig ${PIPESTATUS[0]} 882
 fi
-
