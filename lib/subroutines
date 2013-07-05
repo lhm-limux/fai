@@ -978,8 +978,8 @@ call_debootstrap() {
 
     local dversion=$(dpkg -l debootstrap | grep debootstrap | cut -f7 -d' ')
     echo "Creating base system using debootstrap version $dversion"
-    echo "Calling debootstrap $FAI_DEBOOTSTRAP_OPTS $1 $FAI_ROOT $2"
-    LC_ALL=C debootstrap $FAI_DEBOOTSTRAP_OPTS $1 $FAI_ROOT $2
+    echo "Calling debootstrap $FAI_DEBOOTSTRAP_OPTS $1 $FAI_ROOT $2 $3"
+    LC_ALL=C debootstrap $FAI_DEBOOTSTRAP_OPTS $1 $FAI_ROOT $2 $3
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### BEGIN SUBROUTINE INFO
@@ -1002,16 +1002,13 @@ task_extrbase() {
         if [ $do_init_tasks -eq 1 ]; then
             ftar -1v -c base -s /var/tmp /
         else
-            [ -d $NFSROOT/live/filesystem.dir/var/tmp ] &&
-               ftar -1v -c base -s $NFSROOT/live/filesystem.dir/var/tmp /
-            [ -d $NFSROOT/var/tmp ] &&
-               ftar -1v -c base -s $NFSROOT/var/tmp /
+            ftar -1v -c base -s "$NFSROOT/${NFSROOT_ROOTDIR}/var/tmp" /
         fi
 
         # if no base file was extracted, call debootstrap
         if [ ! -d $FAI_ROOT/etc ]; then
             echo "No base file found. Calling debootstrap."
-            [ -z "$FAI_DEBOOTSTRAP" ] && die "$FAI_DEBOOTSTRAP undefined. Aborting"
+            [ -z "$FAI_DEBOOTSTRAP" ] && die "\$FAI_DEBOOTSTRAP undefined. Aborting"
             call_debootstrap $FAI_DEBOOTSTRAP
             task_error 801 $?
         fi

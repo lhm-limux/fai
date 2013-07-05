@@ -68,10 +68,8 @@ purge ~nlinux-image inside the nfsroot.
 Install additional packages defined in /etc/fai/NFSROOT into the
 nfsroot. Also copies all kernels from the nfsroot to the directory $TFTPROOT.
 .TP
-.B \-l
-Create a nfsroot using live/filesystem.dir subdirectory. This is
-needed if the initrd of the kernel is created by the live-boot
-package.
+.B \-N
+Don't create compressed base archives (base.tgz or base.tar.xc).
 .TP
 .B \-p
 Preserve ssh keys. This will preserve the whole .ssh directory of the
@@ -106,15 +104,15 @@ The FAI configuration file.
 The configuration file for fai-make-nfsroot.
 .PD 0
 .TP
-.FN /etc/fai/nfsroot-hooks/
-Directory containing shell scripts to be sourced at the end of fai-make-nfsroot for additional configuration of the nfsroot. Can be changed with NFSROOT_HOOKS.
+.FN /etc/fai/NFSROOT.hooks/
+Directory containing shell scripts to be sourced at the end of fai-make-nfsroot for additional configuration of the nfsroot.
 .PD 0
 .TP
-.FN /etc/fai/apt/sources.list
-Copy this file to the NFSROOT.
+.FN /etc/fai/NFSROOT.files/
+Directory containing a file tree to be copied into the NFSROOT. This should especially contain a valid apt configuration!
 .PD 0
 .TP
-.FN /etc/fai/apt/keys/*.asc
+.FN /etc/fai/apt-keys/*.asc
 Repository keys in .asc format found here will be installed into the NFSROOT.
 .PD 0
 .TP
