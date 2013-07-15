@@ -34,11 +34,12 @@
 usage() {
 
     cat <<-EOF
-	Copyright (C) 1999-2012 Thomas Lange
+Copyright (C) 1999-2012 Thomas Lange
 
-	Usage: fai-make-nfsroot [OPTIONS]
-	Create an NFSROOT for FAI.
-	Read the man pages pages fai-make-nfsroot(8).
+Usage: fai-make-nfsroot [OPTIONS]
+
+Create an NFSROOT for FAI.
+Read the man pages pages fai-make-nfsroot(8).
 EOF
     exit 0
 }
@@ -75,9 +76,9 @@ check_nfsroot() {
 badupdateto32() {
 
     cat <<-EOF
-	It seems that you have updated an older FAI version without checking files in /etc/fai/
-	Please check the NEWS file for changes in variable names and if you have a linux-image package
-	defined in /etc/fai/NFSROOT.
+It seems that you have updated an older FAI version without checking files in
+/etc/fai/. Please check the NEWS file for changes in variable names and if you
+have a linux-image package defined in /etc/fai/NFSROOT.
 EOF
     die 1 $@
 }
@@ -391,7 +392,7 @@ bootstraping_nfsroot() {
 
     # we need these option before installing the first package. So we
     # can't put this into fai-nfsroot /etc/apt/apt.conf.d/90fai
-    cat <<EOF >$NFSROOT/etc/apt/apt.conf.d/10fai
+    cat <<-EOF >$NFSROOT/etc/apt/apt.conf.d/10fai
 APT::Get::AllowUnauthenticated true;
 Aptitude::CmdLine::Ignore-Trust-Violations yes;
 Acquire::Languages none;
