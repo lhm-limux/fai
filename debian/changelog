@@ -1,8 +1,8 @@
-fai (4.1~lhm1) tramp; urgency=low
+fai (4.1~lhm2) tramp; urgency=low
 
   * A lot of changes in git.
 
- -- Jan-Marek Glogowski <jan-marek.glogowski@muenchen.de>  Tue, 28 May 2013 19:35:02 +0200
+ -- Jan-Marek Glogowski <jan-marek.glogowski@muenchen.de>  Mon, 15 Jul 2013 13:31:53 +0200
 
 fai (4.1) UNRELEASED; urgency=low
 
