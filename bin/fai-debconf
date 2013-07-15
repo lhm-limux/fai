@@ -88,10 +88,10 @@ reconfigure_packages() {
 usage() {
 
     local ex=$1
-    cat <<-EOF
-    fai-debconf Copyright (C) 2005-2010 Thomas Lange
+    cat <<EOF
+fai-debconf Copyright (C) 2005-2010 Thomas Lange
 
-    Usage: fai-debconf [OPTION] DIRECTORY
+Usage: fai-debconf [OPTION] DIRECTORY
 EOF
     exit $ex
 }

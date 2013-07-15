@@ -26,12 +26,12 @@ mount -o bind /dev $target/dev
 
 $ROOTCMD grub-install --just-copy
 
-$ROOTCMD grub --device-map=/dev/null --no-floppy --batch <<-EOF
-	device $bootdev $BOOT_DEVICE
-	root $bootpart
-	setup $bootdev
-	quit
-	EOF
+$ROOTCMD grub --device-map=/dev/null --no-floppy --batch <<EOF
+device $bootdev $BOOT_DEVICE
+root $bootpart
+setup $bootdev
+quit
+EOF
 
 umount $target/dev
 
@@ -52,18 +52,17 @@ else
 fi
 title=`head -1 $target/etc/redhat-release`
 
-cat > $target/boot/grub/grub.conf <<-EOF
-	timeout 5
-	default 0
-	$pretty
-	hiddenmenu
-	
-	title $title
-	  root $bootpart
-	  kernel $bootdir/vmlinuz-$version root=$ROOT_PARTITION ro
-	  initrd $bootdir/$iname-$version.img
-	EOF
+cat > $target/boot/grub/grub.conf <<EOF
+timeout 5
+default 0
+$pretty
+hiddenmenu
 
+title $title
+  root $bootpart
+  kernel $bootdir/vmlinuz-$version root=$ROOT_PARTITION ro
+  initrd $bootdir/$iname-$version.img
+EOF
 
 echo ""
 echo "Grub installed on $BOOT_DEVICE = $bootdev"

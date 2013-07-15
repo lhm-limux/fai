@@ -32,10 +32,10 @@ excludeopt="-wildcards -e usr/share/locale/* -e usr/share/doc/* -e var/lib/apt/*
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 usage() {
 
-    cat <<-EOF
- fai-nfsroot2image [options] <nfsroot directory> image.squashfs
+    cat <<EOF
+fai-nfsroot2image [options] <nfsroot directory> image.squashfs
 
- For more options read the man page fai-nfsroot2image(8)
+For more options read the man page fai-nfsroot2image(8)
 EOF
 exit 0
 }

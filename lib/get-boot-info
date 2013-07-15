@@ -50,11 +50,11 @@ netdevice_info() {
     netdevices_all="$netdevices_all $tmp"
     netdevices_all=$(for dev in $netdevices_all; do echo $dev; done| sort | uniq| tr '\n' ' ')
 
-    cat > $bootlog <<-EOF
-        netdevices_all="$netdevices_all"
-        netdevices_up="$netdevices_up"
-        netdevices="$netdevices"
-        EOF
+    cat > $bootlog <<EOF
+netdevices_all="$netdevices_all"
+netdevices_up="$netdevices_up"
+netdevices="$netdevices"
+EOF
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 get_dhcp_info() {
@@ -76,12 +76,12 @@ setnet() {
     NETMASK=${ips%%:*}
     BROADCAST=${IPADDR%\.*}.255
 
-    cat >> $bootlog <<-EOF
-        IPADDR=$IPADDR
-        SERVER=$SERVER
-        NETMASK=$NETMASK
-        GATEWAYS=$GATEWAYS
-        BROADCAST=$BROADCAST
+    cat >> $bootlog <<EOF
+IPADDR=$IPADDR
+SERVER=$SERVER
+NETMASK=$NETMASK
+GATEWAYS=$GATEWAYS
+BROADCAST=$BROADCAST
 EOF
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

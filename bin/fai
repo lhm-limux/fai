@@ -139,19 +139,19 @@ fai_init() {
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 usage() {
-    cat <<-EOF
-        fai $FAI_VERSION. Copyright (C) 1999-2013 Thomas Lange
-        Usage: $0 [options] [action]
+    cat <<EOF
+fai $FAI_VERSION. Copyright (C) 1999-2013 Thomas Lange
+Usage: $0 [options] [action]
 
-        Options:
-           -v|--verbose         display more information during the update
-           -d|--debug           display debug information (implies -v)
-           -h|--help            display this help message
-           -N|--new             renew list of classes
-           -c|--class           comma separated list of classes
-           -C|--cfdir CFDIR     Use CFDIR for  reading the config files
-           -s|--cspace CSDIR    URI of the configuration space
-           -u|--hostname HNAME  set hostname to be used
+Options:
+   -v|--verbose         display more information during the update
+   -d|--debug           display debug information (implies -v)
+   -h|--help            display this help message
+   -N|--new             renew list of classes
+   -c|--class           comma separated list of classes
+   -C|--cfdir CFDIR     Use CFDIR for  reading the config files
+   -s|--cspace CSDIR    URI of the configuration space
+   -u|--hostname HNAME  set hostname to be used
 
 EOF
     exit 0

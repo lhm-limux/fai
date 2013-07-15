@@ -34,9 +34,10 @@ export PATH=$PATH:/usr/sbin
 trap "umount_dirs" EXIT ERR
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 usage() {
-
-    echo "fai-mirror -- create and manage a partial mirror for FAI."
-    echo "Please read the manual page fai-mirror(1)."
+    cat <<EOF
+fai-mirror -- create and manage a partial mirror for FAI.
+Please read the manual page fai-mirror(1).
+EOF
     exit
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -254,7 +255,8 @@ trap "" EXIT ERR
 # create mirror directory structure
 echo "Calling reprepro"
 mkdir $mirrordir/conf
-cat > $mirrordir/conf/distributions <<EOF   # generate config file for reprepro
+# generate config file for reprepro
+cat > $mirrordir/conf/distributions <<EOF
 Codename: cskoeln
 Architectures: i386 amd64
 Components: main non-free contrib

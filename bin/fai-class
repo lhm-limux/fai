@@ -73,15 +73,15 @@ fc_check_status() {
 usage() {
 
     ex=$1
-    cat <<-EOF
-        fai-class  Copyright (C) 2002-2009 Thomas Lange
+    cat <<EOF
+fai-class  Copyright (C) 2002-2009 Thomas Lange
 
-        Usage: fai-class [OPTION] DIRECTORY CLASSFILE
-        Define classes using files and scripts in DIRECTORY
+Usage: fai-class [OPTION] DIRECTORY CLASSFILE
+Define classes using files and scripts in DIRECTORY
 
-        Executes scripts in DIRECTORY starting with two digits.
-        The standard output of these scripts are names of classes which
-        are written to CLASSFILE.
+Executes scripts in DIRECTORY starting with two digits.
+The standard output of these scripts are names of classes which
+are written to CLASSFILE.
 EOF
     exit $ex
 }
