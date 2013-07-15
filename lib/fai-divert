@@ -32,10 +32,10 @@ mkdivert() {
     # make a diversion of a file
     [ "$debug" ] || local divertquiet=--quiet
     $ROOTCMD dpkg-divert $divertquiet --package fai --rename --add $1 &&
-    cat > $FAI_ROOT/$1 <<-EOF
-        #! /bin/sh
-        # diversion of $1 created by FAI
-        exit 0
+    cat > $FAI_ROOT/$1 <<EOF
+#! /bin/sh
+# diversion of $1 created by FAI
+exit 0
 EOF
     chmod a+rx $FAI_ROOT/$1
 }

@@ -33,7 +33,7 @@
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 usage() {
 
-    cat <<-EOF
+    cat <<EOF
 Copyright (C) 1999-2012 Thomas Lange
 
 Usage: fai-make-nfsroot [OPTIONS]
@@ -79,7 +79,7 @@ check_nfsroot() {
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 badupdateto32() {
 
-    cat <<-EOF
+    cat <<EOF
 It seems that you have updated an older FAI version without checking files in
 /etc/fai/. Please check the NEWS file for changes in variable names and if you
 have a linux-image package defined in /etc/fai/NFSROOT.
@@ -380,7 +380,7 @@ create_nfsroot() {
 
     # we need these option before installing the first package. So we
     # can't put this into fai-nfsroot /etc/apt/apt.conf.d/90fai
-    cat <<-EOF >$NFSROOT/etc/apt/apt.conf.d/10fai
+    cat > $NFSROOT/etc/apt/apt.conf.d/10fai <<EOF
 APT::Get::AllowUnauthenticated true;
 Aptitude::CmdLine::Ignore-Trust-Violations yes;
 Acquire::Languages none;
@@ -420,12 +420,13 @@ EOF
     # definition for loopback device
     echo "iface lo inet loopback" > etc/network/interfaces
 
-    cat >> root/.profile <<-EOF
-	PATH=/usr/local/sbin:/usr/local/bin:/usr/lib/fai:/bin:/sbin:/usr/bin:/usr/sbin:
-	export PATH
-	. /usr/lib/fai/subroutines
-	set -a
-	. /tmp/fai/variables.log 2>/dev/null
+    cat >> root/.profile <<EOF
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/lib/fai:/bin:/sbin:/usr/bin:/usr/sbin
+export PATH
+. /usr/lib/fai/subroutines
+set -a
+. /tmp/fai/variables.log 2>/dev/null
 EOF
 
 }
