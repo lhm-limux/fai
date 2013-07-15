@@ -528,9 +528,9 @@ task_faiend() {
     killall -q sshd udevd
     if [ -f /etc/RUNNING_FROM_FAICD ]; then
         echo 1 > /proc/sys/dev/cdrom/autoeject
-        cat > $target/tmp/rebootCD <<'EOF'
+        cat > $target/tmp/rebootCD <<EOF
 #! /bin/bash
- device=$1
+device=$1
 eject -m /dev/$device 2>/dev/null >/dev/null
 echo "Remove CDROM and press <RETURN> to continue reboot"
 read
@@ -623,8 +623,6 @@ task_dirinstall() {
         mkramdisk -au 2>/dev/null
     }
     trap 'clean_exit' INT QUIT EXIT
-
-
 
     [ -f "$stamp" ] && {
        echo -n "fai dirinstall into directory $FAI_ROOT already running or was aborted before. PID: "
@@ -961,7 +959,7 @@ task_repository () {
     fcopy -Mir /etc/apt # copy all other apt config files from the config space
 
     if [ X$FAI_ALLOW_UNSIGNED = X1 ]; then
-        cat <<EOF > $FAI_ROOT/etc/apt/apt.conf.d/10fai
+        cat > $FAI_ROOT/etc/apt/apt.conf.d/10fai <<EOF
 APT::Get::AllowUnauthenticated "true";
 Aptitude::CmdLine::Ignore-Trust-Violations yes;
 EOF

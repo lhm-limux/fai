@@ -122,7 +122,6 @@ Usage: fai-savelog [OPTION]
 
    -r       Save log files to \$LOGSERVER using rcp or scp
    -l       Save log files to local directory \$FAI_ROOT/var/log/fai
-
 EOF
 exit 0
 }

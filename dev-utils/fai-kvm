@@ -41,16 +41,14 @@ die() {
 usage() {
 
   cat <<EOF
-
- fai-kvm [options] pxe   # start a host booting with PXE from NIC
- fai-kvm [options] cd [imagename] # start a host booting from a ISO image
+fai-kvm [options] pxe   # start a host booting with PXE from NIC
+fai-kvm [options] cd [imagename] # start a host booting from a ISO image
 
  -n          create a new empty disk image, which is used as a local disk
  -s <size>   size of the local disk (GB, defaults to 5GB)
  -d <num>    number of local disks (default is one)
  -m <mem>    RAM size (MB, defaults to 2000MB)
  -u <num>    number of the user (so multiple users can call this script)
-
 EOF
   exit 0
 }

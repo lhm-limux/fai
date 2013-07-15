@@ -182,12 +182,11 @@ usage() {
 
     local ex
     ex=$1
-    cat <<-EOF
-        fai-do-scripts Copyright (C) 2003-2010 Thomas Lange
-        Read the manual page fai-do-scripts(1) for more information.
+    cat <<EOF
+fai-do-scripts Copyright (C) 2003-2010 Thomas Lange
+Read the manual page fai-do-scripts(1) for more information.
 
-        Usage: fai-do-scripts [OPTION] DIRECTORY
-
+Usage: fai-do-scripts [OPTION] DIRECTORY
 EOF
     exit $ex
 }
