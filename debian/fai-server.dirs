@@ -1,4 +1,5 @@
-etc/fai/apt
+etc/fai/NFSROOT.files/etc/apt/keys
+etc/fai/NFSROOT.hooks
 usr/bin
 usr/sbin
 usr/share/fai/pixmaps

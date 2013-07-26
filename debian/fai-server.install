@@ -1,7 +1,5 @@
-etc/fai/apt/sources.list
 etc/fai/grub.cfg
-etc/fai/live.conf
-etc/fai/NFSROOT
+etc/fai/NFSROOT*
 etc/fai/nfsroot.conf
 usr/bin/fai-mirror
 usr/bin/fai-monitor-gui
