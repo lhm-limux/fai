@@ -30,18 +30,23 @@
 
 # source this file, then you have these function available in the shell
 
+# get the error codes
+. /usr/lib/fai/subroutines-error
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 die() {
 
-    # echo comment and exit installation
-    task_savelog
-    echo "$@"
-    if [ X$FAI_ACTION = Xinstall ]; then
-        exec bash -i
-    else
-        exit 99
-    fi
+    task error 503 "$FUNCNAME" "fai_fatal"
+    fai_fatal "$@"
 }
+
+stop_fai_installation() {
+
+    task error 503 "$FUNCNAME" "fai_fatal"
+    fai_fatal "$@"
+}
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 defnop() {
 
@@ -153,31 +158,168 @@ wait_for_jobs() {
     done
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-stop_fai_installation() {
+### BEGIN SUBROUTINE INFO
+# Provides-Var:      none
+# Required-Var:      $1 = error code
+# Short-Description: skip error handling of error code
+### END SUBROUTINE INFO
+fai_skiperror() {
 
-    # this subroutine should directly stop the installation process
-    sendmon "TASKEND $taskname $task_error"
-    echo "Error in task $taskname. Traceback: $task_error_func" >&2
-    die "FATAL ERROR. Installation stopped."
+    skiptask "$@"
+}
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### BEGIN SUBROUTINE INFO
+# Provides-Var:      none
+# Required-Var:      $@ = error message
+# Short-Description: create a logged warning message
+### END SUBROUTINE INFO
+
+fai_warn() {
+ 
+    task error -1 1 "$@"
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### BEGIN SUBROUTINE INFO
-# Provides-Var:      $task_error
-# Required-Var:      $1 $2 $task_error
-# Short-Description: save the maximum error code,
-# Short-Description: $1 is the error that will be saved unless $2 is zero
+# Provides-Var:      none
+# Required-Var:      $@ = error message
+# Short-Description: create a logged error message
+### END SUBROUTINE INFO
+
+fai_error() {
+
+    task error -1 2 "$@"
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### BEGIN SUBROUTINE INFO
+# Provides-Var:      none
+# Required-Var:      $@ = error message
+# Short-Description: create a logged fatal message
+### END SUBROUTINE INFO
+
+fai_fatal() {
+ 
+    task error -1 3 "$@"
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### BEGIN SUBROUTINE INFO
+# Provides-Var:      none
+# Required-Var:      $1
+# Suggests-Var:      $2
+# Short-Description: error task handler
+# Long-Description:
+#   $1 = the FAI error code
+#   $2 = the error message
 ### END SUBROUTINE INFO
 
 task_error() {
 
-    [ X$2 = X0 ] && return
-    task_error_func=${FUNCNAME[*]}
-    [ $1 -gt $task_error ] && task_error=$1
-    [ $task_error -gt $STOP_ON_ERROR ] && stop_fai_installation
+    local -a backtrace
+    local error_taskname
+    local error_backtrace
+
+    # Remove error handler from backtrace
+    backtrace=("${FUNCNAME[@]}")
+    unset backtrace[0]
+    unset backtrace[1]
+    error_backtrace="${backtrace[*]}"
+    for item in $error_backtrace; do
+        error_taskname=${item#task_}
+        [ "${error_taskname}" != "${item}" ] && break
+    done
+
+    fai_verify_error "$@"
+    [ $? -ne 0 ] && return
+
+    # Remove error skipfile, if available
+    local skipfile="$LOGDIR/skip.$task_error_code"
+    rm -f "$skipfile"
+
+    local error_sevy_str
+    case $task_error_sevy in
+        1) error_sevy_str="warn" ;;
+        2) error_sevy_str="error" ;;
+        3) error_sevy_str="fatal" ;;
+        *)
+            echo "Unknown error severity: $task_error_sevy" >&2
+            error_sevy_str="fatal"
+            task_error_sevy=3
+            ;;
+    esac
+
+    local sendmon_msg="$error_taskname $task_error_code $error_sevy_str:$task_error_msg"
+    if [ $task_error_die -eq 0 ]; then
+        sendmon "TASKERROR $sendmon_msg"
+        return 0
+    fi
+
+    echo >&2
+    echo "FAI DIE start" >&2
+
+    sendmon "TASKDIE $sendmon_msg"
+    task savelog
+
+    echo "Error in task $taskname. Traceback: $task_error_func" >&2
+    [ -n "$task_error_msg" ] && echo "$task_error_msg" >&2
+
+    if [ $FAI_DIE_SLEEPING -lt 0 ]; then
+        if [ "X$FAI_ACTION" = "Xinstall" ]; then
+            bash -i
+        fi
+    else
+        sleep $FAI_DIE_SLEEPING
+    fi
+
+    task faiend
+    exit 99
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### BEGIN SUBROUTINE INFO
-# Provides-Var:      $task_error
+# Provides-Var:      $task_error_code
+# Required-Var:      $1
+# Short-Description: convenience function for exitcode errors
+# Long-Description: 
+#   $1 = the returncode
+#   $2 = the FAI error code
+#   $@ = error variables
+### END SUBROUTINE INFO
+
+exitcode_error() {
+
+    if [ $1 -ne 0 ]; then
+        shift
+        task error $@
+    fi
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### BEGIN SUBROUTINE INFO
+# Provides-Var:      $task_error_code $GETCONFIG_TOOL
+# Required-Var:      $1
+# Short-Description: convenience function for exitcode errors
+# Long-Description:
+#   $1 = the returncode
+#   $2 = the FAI error code
+#   $@ = error variables
+### END SUBROUTINE INFO
+
+exitcode_error_getconfig() {
+
+    local ecode=$1
+    local fai_code=$2
+
+    if [ -z $GETCONFIG_TOOL ]; then
+        echo "\$GETCONFIG_TOOL not set. This function should just be called from get-config-dir-* helpers!"
+        return
+    fi
+
+    if [ $ecode -ne 0 ]; then
+        shift ; shift
+        task error $fai_code $GETCONFIG_TOOL $ecode $@
+    fi
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### BEGIN SUBROUTINE INFO
+# Provides-Var:      $task_error_code
 # Required-Var:      $LOGDIR
 # Short-Description: call a certain task
 ### END SUBROUTINE INFO
@@ -190,6 +332,11 @@ task() {
 
     local taskname=$1
     shift
+
+    # Prevent multiple / recursive calls of tasks
+    local runlock="/var/run/fai/runlock.$taskname"
+    [ -f "$runlock" ] && return
+    echo > "$runlock"
 
     # Evaluate skip file and FAI_FLAG skip${taskname}
     local skipfile="$LOGDIR/skip.$taskname"
@@ -205,12 +352,12 @@ task() {
     else
         echo "Calling task_$taskname"
         sendmon "TASKBEGIN $taskname"
-        task_error=0   # task can set this variable to indicate an error
-        task_error_func=''
+        unset task_error_sevy task_error_msg
+        task_error_code=0
         task_$taskname "$@"
-        sendmon "TASKEND $taskname $task_error"
-        if [ "$task_error" -ne 0 ] ; then
-          echo "Exit code task_$taskname: $task_error" >&2
+        sendmon "TASKEND $taskname $task_error_code"
+        if [ "$task_error_code" -ne 0 ] ; then
+            echo "Exit code task_$taskname: $task_error_code" >&2
         fi
 
         # Evaluate wait flags for task
@@ -224,6 +371,9 @@ task() {
             read readdummy
         fi
     fi
+
+    # Remove run task lock for errors
+    [ $taskname = "error" ] && rm -f "$runlock"
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### BEGIN SUBROUTINE INFO
@@ -372,9 +522,7 @@ task_setup() {
 task_action() {
 
     if [ -z "$FAI_ACTION" ]; then
-        echo "No action in \$FAI_ACTION defined."
-        sendmon "TASKERROR action 21"
-        task_faiend
+        task error 900
         exit
     fi
 
@@ -382,7 +530,7 @@ task_action() {
     case $FAI_ACTION in
         install)
             if [ $do_init_tasks -eq 0 ]; then
-                echo "Cowardly refusing to run a FAI installation on a running system."
+                task error 901
                 return
             fi
             echo Performing FAI installation. All data may be overwritten!
@@ -405,16 +553,15 @@ task_action() {
             echo Showing system information.
             task sysinfo
             task_faiend
-            die Now you have a shell.
+            echo "Now you have a shell." >&2
+            exec bash -i
             ;;
         *)
             if [ -f $FAI/hooks/$FAI_ACTION ]; then
                 echo "Calling user defined action: $FAI_ACTION"
                 $FAI/hooks/$FAI_ACTION
             else
-                echo "ERROR: User defined action $FAI/hooks/$FAI_ACTION not found." >&2
-                sendmon "TASKERROR action 22"
-                task_faiend
+                task error 902 "$FAI_ACTION"
             fi
             ;;
     esac
@@ -430,10 +577,9 @@ task_action() {
 task_defclass() {
 
     if [ ! -d $FAI/class ]; then
-        sendmon "TASKERROR defclass 21"
         echo "Subdirectory $FAI/class missing in config space. Following subdirectories are found:"
         find $FAI -maxdepth 1 -type d -printf "%p\n"
-        die "Aborting."
+        task error 907 "$FAI"
     fi
 
     # new script for defining classes; variables imported: $LOGDIR
@@ -446,7 +592,7 @@ task_defclass() {
         classes=$cmdlineclasses
     elif [ ! -f /var/lib/fai/FAI_CLASSES ]; then
         # use classes defined at installation time
-        die "Try to read classes from /var/lib/fai/FAI_CLASSES. Failed. Aborting."
+        task error 903
     else
         classes=$(< /var/lib/fai/FAI_CLASSES)
     fi
@@ -501,17 +647,14 @@ task_defvar() {
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 task_mountdisks() {
 
-    [ ! -f $LOGDIR/fstab ] && die "No $LOGDIR/fstab created."
+    [ ! -f $LOGDIR/fstab ] && task error 750 "$LOGDIR"
     # mount swap space
     local sd
     for sd in $SWAPLIST; do
         swapon -p1 $sd && [ "$flag_verbose" ] && echo "Enable swap device $sd"
     done
     mount2dir $FAI_ROOT $LOGDIR/fstab
-    if [ "$?" -ne 0 ]; then
-        sendmon "TASKERROR mountdisks 885"
-        task_error 885
-    fi
+    exitcode_error $? 860
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 task_configure() {
@@ -520,7 +663,7 @@ task_configure() {
     [ ${flag_waitscripts:=0} -ne 0 ] && cmdopts="$cmdopts -w"
     [ ${FAI_CONFIGURE_RUN_ALL:=1} -eq 0 ] && cmdopts="$cmdopts -e"
     fai-do-scripts $cmdopts $FAI/scripts
-    task_error 420 $?
+    exitcode_error $? 420
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 task_tests() {
@@ -530,8 +673,7 @@ task_tests() {
         # check if any test failed
         if [ -f $LOGDIR/test.log ]; then
             if grep -q "FAILED with " $LOGDIR/test.log; then
-                sendmon "TASKERROR tests 312"
-                task_error 312
+                task error 502
                 return 1
             fi
         fi
@@ -623,7 +765,8 @@ EOF
         cdromdevice=$(awk '/ name:/ {print $3}' /proc/sys/dev/cdrom/info)
         chroot $target /tmp/rebootCD $cdromdevice
         # never reached, because chroot will reboot the machine
-        die "Internal error when calling /tmp/rebootCD." >&2
+        echo "Internal error when calling /tmp/rebootCD." >&2
+        exec bash -i
     fi
     umount $FAI_ROOT/proc
     umount -arf 2>/dev/null
@@ -663,8 +806,7 @@ task_install() {
         echo "Error while executing commands in subshell." >&2
         echo -n "$stamp was not removed. PID of running process: "
         cat $stamp
-        sendmon "TASKERROR install 21"
-        die "Please look at the log files in $LOGDIR for errors." >&2
+        task error 904 "install" "$LOGDIR"
     fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -722,15 +864,14 @@ task_dirinstall() {
         echo "Error while executing commands in subshell." >&2
         echo -n "$stamp was not removed. PID of running process: "
         cat $stamp
-        sendmon "TASKERROR install 21"
-        die "Please look at the log files in $LOGDIR for errors." >&2
+        task error 904 "dirinstall" "$LOGDIR"
     fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 task_softupdate() {
 
     stamp=/var/run/fai/fai_softupdate_is_running
-    [ -f "$stamp" ] && die "Lock file $stamp found. Another fai softupdate is already running. Aborting."
+    [ -f "$stamp" ] && task error 905 "$stamp"
     echo $$ > $stamp
     trap "rm -f $stamp" INT QUIT EXIT
 
@@ -760,8 +901,7 @@ task_softupdate() {
         echo "Error while executing commands in subshell." >&2
         echo -n "$stamp was not removed. PID of running process: "
         cat $stamp
-        sendmon "TASKERROR softupdate 21"
-        die "Please look at the log files in $LOGDIR for errors." >&2
+        task error 904 "softupdate" "$LOGDIR"
     fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -937,8 +1077,7 @@ task_confdir() {
     fi
 
     get-config-dir || {
-        echo "Problems accessing the config space."
-        die ""
+        task error 906
     }
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -959,10 +1098,8 @@ task_partition() {
 
     # partitioning tool must create $LOGDIR/disk_var.sh file
     if [ ! -s $LOGDIR/disk_var.sh ]; then
-        task_error 710
         cat $LOGDIR/format.log
-        sendmon "TASKERROR partition 21"
-        die "Partitioning tool did not create $LOGDIR/disk_var.sh file."
+        task error 850 "$LOGDIR"
     fi
     # now define variable for root and boot partition and boot device
     . $LOGDIR/disk_var.sh
@@ -1009,9 +1146,9 @@ task_extrbase() {
         # if no base file was extracted, call debootstrap
         if [ ! -d $FAI_ROOT/etc ]; then
             echo "No base file found. Calling debootstrap."
-            [ -z "$FAI_DEBOOTSTRAP" ] && die "\$FAI_DEBOOTSTRAP undefined. Aborting"
+            [ -z "$FAI_DEBOOTSTRAP" ] && task error 801
             call_debootstrap $FAI_DEBOOTSTRAP
-            task_error 801 $?
+            exitcode_error $? 803
         fi
     fi
     # now we can copy fstab
@@ -1038,16 +1175,14 @@ mount_mirror() {
     if mount $romountopt $FAI_DEBMIRROR ${FAI_ROOT}${MNTPOINT}; then
       [ "$flag_debug" ] && echo "Mirror mounted from $FAI_DEBMIRROR to ${FAI_ROOT}${MNTPOINT}"
     else
-      sendmon "TASKERROR mirror $?"
-      die "Can't mount $FAI_DEBMIRROR"
+      task error 810 "$FAI_DEBMIRROR"
     fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 task_debconf () {
 
     if [ ! -d $FAI/debconf ]; then
-        echo "Can't find debconf directory $FAI/debconf. Skipping preseeding."
-        task_error 2
+        task error 400
         return
     fi
     fai-debconf $FAI/debconf
@@ -1082,22 +1217,23 @@ task_repository () {
     # some generale network files are needed on the client
     # resolv.conf is needed, /etc/hosts is useful in /target
     # use a file from the config space or from /etc inside the nfsroot
-    if ! fcopy -BMv /etc/resolv.conf ; then
-        if test -L $FAI_ROOT/etc/resolv.conf && \
-            [ $(readlink -f /etc/resolv.conf) = $(readlink -f $FAI_ROOT/etc/resolv.conf) ] ; then
-            echo "/etc/resolv.conf + $FAI_ROOT/etc/resolv.conf are already pointing to the same file."
-        else
-            cp -v /etc/resolv.conf $FAI_ROOT/etc
+    for FILE in /etc/resolv.conf /etc/hosts ; do
+        if ! fcopy -BMv "$FILE" ; then
+            if [ "$(readlink -f '$FILE')" != "$(readlink -f '${FAI_ROOT}$FILE')" ]; then
+                cp -v "$FILE" "${FAI_ROOT}$FILE"
+            fi
         fi
-    fi
-    fcopy -BMv /etc/hosts || cp -v /etc/hosts $FAI_ROOT/etc
+    done
 
-    # apt specific things
-    fcopy -BMv /etc/apt/sources.list || cp -v $FAI_ETC_DIR/apt/sources.list $FAI_ROOT/etc/apt
-    if fcopy -BMv /etc/apt/preferences; then
-        [ -f $FAI_ETC_DIR/apt/preferences ] && cp -v $FAI_ETC_DIR/apt/preferences $FAI_ROOT/etc/apt
-    fi
-    fcopy -Mir /etc/apt # copy all other apt config files from the config space
+    # Copy FAI apt config files
+    for FILE in apt/sources.list apt/preferences ; do
+        if [ -f "${FAI_ETC_DIR}/$FILE" ]; then
+            cp -v "${FAI_ETC_DIR}/$FILE" "${FAI_ROOT}/etc/$FILE"
+        fi
+    done
+
+    # Copy all apt config files from the config space
+    fcopy -BMirv /etc/apt
 
     if [ X$FAI_ALLOW_UNSIGNED = X1 ]; then
         cat > $FAI_ROOT/etc/apt/apt.conf.d/10fai <<EOF
@@ -1107,8 +1243,8 @@ EOF
     fi
 
     # add apt keys for signed repositories
-
     declare -A keys
+
     # remember all available *.asc files
     for f in `cd $FAI/package_config; ls *.asc 2>/dev/null`; do
         keys["$f"]=1
@@ -1131,6 +1267,13 @@ EOF
         echo "You have to rename them to match a class name."
     fi
 
+    # warn about missing sources.list files
+    if ls -1 "$FAI_ROOT"/etc/apt/sources.lists \
+            "$FAI_ROOT"/etc/apt/sources.list.d/* 2>/dev/null | wc -l
+    then
+        task error 550
+    fi
+
     # mount Debian mirror via NFS if needed
     mount_mirror
 }
@@ -1141,10 +1284,10 @@ task_updatebase() {
 
     if [ "$flag_verbose" ]; then
         updatebase </dev/null 2>&1 | tee -a $LOGDIR/software.log
-        task_error 474 ${PIPESTATUS[0]}
+        exitcode_error ${PIPESTATUS[0]} 474 "${PIPESTATUS[0]}"
     else
         updatebase </dev/null >> $LOGDIR/software.log 2>&1
-        task_error 474 $?
+        exitcode_error $? 474 "$?"
     fi
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1153,18 +1296,18 @@ task_instsoft() {
     echo "Installing software may take a while"
     if [ "$flag_debug" ]; then
         install_packages | tee -a $LOGDIR/software.log
-        task_error 471 ${PIPESTATUS[0]}
+        exitcode_error ${PIPESTATUS[0]} 471 "${PIPESTATUS[0]}"
     elif [ "$flag_verbose" ]; then
         install_packages </dev/null 2>&1 | tee -a $LOGDIR/software.log
-        task_error 471 ${PIPESTATUS[0]}
+        exitcode_error ${PIPESTATUS[0]} 471 "${PIPESTATUS[0]}"
     else
         install_packages </dev/null >> $LOGDIR/software.log 2>&1
-        task_error 471 $?
+        exitcode_error $? 471 "$?"
     fi
     # This almost indicates an error
-    egrep "^E:" $LOGDIR/software.log && task_error 472
-    grep "Couldn't find any package whose name or description matched" $LOGDIR/software.log && task_error 321
-    grep -q "E: Sub-process /usr/bin/dpkg returned an error code" $LOGDIR/software.log && task_error 620
+    egrep "^E:" $LOGDIR/software.log && task error 472
+    grep "Couldn't find any package whose name or description matched" $LOGDIR/software.log && task error 421
+    grep -q "E: Sub-process /usr/bin/dpkg returned an error code" $LOGDIR/software.log && task error 700
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 task_finish() {
@@ -1205,8 +1348,7 @@ task_chboot() {
     frsh="$remotesh -l $LOGUSER ${SERVER}"
 
     if [ -z "$SERVER" ] ; then
-        echo "SERVER not defined. Can't change network boot configuration"
-        task_error 2
+        task error 500
         doexit=1
     fi
     [ $doexit -eq 1 ] && return
@@ -1215,8 +1357,7 @@ task_chboot() {
     # first test if rsh to server works
     $frsh true >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        task_error 3
-        echo "WARNING: $frsh failed. Can't call fai-chboot on the install server." >&2
+        task error 501 "$frsh"
     else
         if [ -n "$nexttest" ]; then
                 # for test sequences, we want the system to reinstall immediately with
