@@ -260,8 +260,8 @@ if [ X$action = Xdirinstall ]; then
     fi
 
     if [ ! -e /usr/share/fai/nfsroot.conf.defaults ]; then
-	echo "/usr/share/fai/nfsroot.conf.defaults not found." >&2
-	die 7 "You may want to install the package fai-server"
+        echo "/usr/share/fai/nfsroot.conf.defaults not found." >&2
+        die 7 "You may want to install the package fai-server"
     fi
 
     (

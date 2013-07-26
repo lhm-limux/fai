@@ -586,6 +586,7 @@ task_defclass() {
     if [ $renewclass -eq 1 ]; then
         # reevaluate new list of classes
         fai-class $v $d -T $FAI/class $LOGDIR/FAI_CLASSES
+        fai-deps
         classes=$(< $LOGDIR/FAI_CLASSES)
     elif [ -n "$cmdlineclasses" ]; then
         classes=$cmdlineclasses
@@ -888,8 +889,7 @@ task_softupdate() {
     task instsoft
     task configure
     task tests
-    date
-    [ -f /proc/uptime ] && echo "The $FAI_ACTION took $[$(cut -d . -f 1 /proc/uptime)-$start_seconds] seconds."
+    task finish
 
     rm -f $stamp
     # save again, because new messages could be created
