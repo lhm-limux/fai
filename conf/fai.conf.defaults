@@ -1,6 +1,7 @@
 # Default values for fai.conf
 # Please keep sorted.
 : ${FAI_ABORT:=reboot}
+: ${FAI_CONFIGURE_RUN_ALL:=1}
 : ${FAI_LOGPROTO:=ssh}
 : ${FAI_MONITOR_SEND_ID:=host}
 : ${FAI:=/var/lib/fai/config}
