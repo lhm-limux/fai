@@ -1,3 +1,9 @@
+fai (4.1~lhm5) tramp; urgency=low
+
+  * Make libgraph-perl a dependency instead of a recommendation.
+
+ -- Jan-Marek Glogowski <jan-marek.glogowski@muenchen.de>  Mon, 16 Sep 2013 15:44:00 +0200
+
 fai (4.1~lhm4) tramp; urgency=low
 
   * A lot of changes in git.
