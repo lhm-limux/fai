@@ -17,7 +17,7 @@ checkdisk() {
 
         # don't install on usb devices
         if [ $skipusb -eq 1 ]; then
-            readlink /sys/block/${device}/device | grep -q "/usb[0-9]\+/" && continue
+            readlink -e /sys/block/${device}/device | grep -q "/usb[0-9]\+/" && continue
         fi
 
         # disks should be owned by group "disk"

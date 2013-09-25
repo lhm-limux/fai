@@ -1,3 +1,9 @@
+fai (4.1~lhm6) tramp; urgency=low
+
+  * fai-disk-info: fix usb detection
+
+ -- Georg Vogetseder <externer.dl.vogetseder@muenchen.de>  Wed, 25 Sep 2013 17:13:02 +0200
+
 fai (4.1~lhm5) tramp; urgency=low
 
   * Make libgraph-perl a dependency instead of a recommendation.
