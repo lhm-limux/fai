@@ -1,3 +1,10 @@
+fai (4.1~lhm7) tramp; urgency=low
+
+  * Divert /sbin/initctl for installs with Upstart.
+  * Add basic git-buildpackage configuration.
+
+ -- Jan-Marek Glogowski <jan-marek.glogowski@muenchen.de>  Tue, 08 Oct 2013 10:53:10 +0200
+
 fai (4.1~lhm6) tramp; urgency=low
 
   * fai-disk-info: fix usb detection
