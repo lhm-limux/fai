@@ -2,6 +2,7 @@ fai (4.1~lhm7) tramp; urgency=low
 
   * Divert /sbin/initctl for installs with Upstart.
   * Add basic git-buildpackage configuration.
+  * Merge upstream changes.
 
  -- Jan-Marek Glogowski <jan-marek.glogowski@muenchen.de>  Tue, 08 Oct 2013 10:53:10 +0200
 
@@ -21,15 +22,39 @@ fai (4.1~lhm4) tramp; urgency=low
 
   * A lot of changes in git.
 
- -- Jan-Marek Glogowski <jan-marek.glogowski@muenchen.de>  Fri, 26 Jul 2013 10:26:48 +0200
+ -- Jan-Marek Glogowski <jan-marek.glogowski@muenchen.de>  Tue, 08 Oct 2013 11:23:59 +0200
 
 fai (4.1) UNRELEASED; urgency=low
 
+  [Thomas Lange]
+  * fai: fix wrong usage of ainsl, Closes: #714869
+    check if process is already running before starting rpc.statd
+  * fcopy: do not set atime/mtime if preinst was used, Closes: #699535
+  * remove fai-quickstart.{postinst,postm}, Closes: #679293
   * savelog.LAST.source: add pattern
   * VERSION: use dpkg-parsechangelog
   * change some dates to 2013
-
- -- Thomas Lange <lange@debian.org>  Tue, 23 Apr 2013 14:25:27 +0200
+  * setup-storage: support more than 9 drives with ciss driver, thanks to
+    Alexandros Kosiaris for the patch Closes: #712572
+  * Commands.pm: add blank to command, thanks to Sven Schumacher for the
+    patch, Closes: #698158
+  * install_packages: extend regex, thanks to  Andrew Ruthven for the
+    patch Closes: #701875
+  * Parser.pm: add package to variable name, thanks to Scotland L. Nelsen
+    for the patch Closes: #703326, #695317
+  * fai-cd: remove doubled entries, patch from Andi B. Mundt,
+    Closes: #682799
+  * DEBIAN/40-misc: new code for setting UTC
+  
+  [ Mika Prokop]
+  * fai-guide: fix typos, update file names and repository data
+  * VERSION: fix syntax error
+  * Makefile: adjust list of scripts
+  * conf/NFSROOT: grub -> grub-pc
+  * task_sysinfo: test if it's a block device
+  * fai-cd: drop dead code
+  
+ -- Thomas Lange <lange@debian.org>  Thu, 29 Aug 2013 11:34:05 +0200
 
 fai (4.0.6) unstable; urgency=low
 
