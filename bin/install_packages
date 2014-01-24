@@ -62,12 +62,11 @@ my $use_aptpkg=0;
 my $aptopt='-y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew';
 my $downloaddir="/var/cache/apt/archives/partial/"; # where to download packages that gets only unpacked
 my $debsourcesdir='/var/lib/fai/packages';
+my @actions;
 
 $| = 1;
 
 
-# @commands is the order of the commands that are executed
-our @commands = qw/y2i y2r zypper zypper-rm yast rpmr urpmi urpme yumgroup yumi yumr smarti smartr hold taskrm taskinst clean-internal cupt cupt-r aptitude aptitude-r install unpack remove dselect-upgrade/;
 %command = (
           "install" => "apt-get $aptopt --fix-missing install",
     "inst-internal" => "apt-get $aptopt --fix-missing -s install",
@@ -122,11 +121,34 @@ $FAI_ROOT = $ENV{FAI_ROOT};
 $classpath = $opt_p || "$ENV{FAI}/package_config";
 $rootcmd = ($FAI_ROOT eq "/" ) ? '' : "chroot $FAI_ROOT";
 @classes = grep { !/^#|^\s*$/ } split(/[\s\n]+/,$ENV{classes});
-foreach (@classes) { $classisdef{$_}=1;}
+%classisdef = map { $_ => undef } @classes;
 
 warn "$0: reading config files from directory $classpath\n" if $verbose;
-foreach (@classes) {
-  &readconfig($classpath,$_) if -f "$classpath/$_"; # read all package config files
+foreach my $class (@classes) {
+  next if ! -f "$classpath/$class";
+  readconfig($classpath, $class);
+}
+
+# merge consecutive equal action type items
+{
+  my $i = 0;
+  my $alen = scalar @actions;
+  my $type = "";
+  my ($last_item_list, $last_item_type);
+  while ($i < $alen) {
+    my $item = $actions[$i];
+    $type = @{$item}[0];
+    if ($type eq $last_item_type) {
+      push(@{$last_item_list}, @{@{$item}[1]});
+      splice(@actions,$i,1);
+      $alen--;
+    }
+    else {
+      $last_item_list = @{$item}[1];
+      $last_item_type = $type;
+      $i++;
+    }
+  }
 }
 
 # check if any Debian related commands/types are used in package_config
@@ -165,7 +187,11 @@ foreach my $entry (@preloadlist,@preloadrmlist) {
 # begin of the big foreach loop
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # call apt-get or tasksel for each type of command whith the list of packages
-foreach $atype (@commands) {
+foreach my $act (@actions) {
+
+  my $atype = @{$act}[0];
+  my %list = ( $atype => @{$act}[1] );
+  next if ! exists $command{$atype};
 
   if ($atype eq "clean-internal" && $hasdebian) {
     execute("$rootcmd $command{'clean-internal'}") unless $listonly;
@@ -256,7 +282,8 @@ exit 0; # end of program
 sub readconfig {
 
   my ($path,$file) = @_;
-  my ($package,$type,$cllist,@oclasses,$doit);
+  my $last_type = "";
+  my ($package,$type,$dep_classlist,$doit,$item_list);
 
   open (FILE,"$path/$file") || warn "ERROR $0: Can't read config file: $path/$file\n";
   warn "$0: read config file $file\n" if $verbose;
@@ -270,18 +297,20 @@ sub readconfig {
     /^PRELOADRM\s+(\S+)\s+(\S+)/ and push(@preloadrmlist, [$1,$2]),next;
 
     if (/^PACKAGES\s+(\S+)\s*/) {
-      ($type,$cllist) = ($1,$');
+      # Split install type and dependency classlist
+      ($type, $dep_classlist) = ($1, $');
       warn "WARNING: Unknow action $type after PACKAGES\n" unless defined $command{$type};
-      # by default no classes are listed after this command so doit
+
       $doit = 1;
-      if ($cllist) {
-        # no classes specified after PACKAGES command
-        # so add all packages listed
-        # use packages on for a list of classes
-        $doit = 0; # assume no class is defined
-        @oclasses = split(/\s+/,$cllist);
-        # if a listed class is defined, add the packaes, otherwise skip these packages
-        foreach (@oclasses) { exists $classisdef{$_} and $doit = 1;}
+      # if any dependency class is defined, add the packages
+      if ($dep_classlist) {
+        $doit = 0;
+        foreach (split(/\s+/, $dep_classlist)) {
+          if (exists $classisdef{$_}) {
+            $doit = 1;
+            last;
+          }
+        }
       }
       next;
     }
@@ -289,8 +318,13 @@ sub readconfig {
     # warning if uppercase letters are found (package are always lowercase)
     warn "WARNING: Uppercase character found in package name in line $_\n" if $_ =~ /[A-Z]/;
     warn "ERROR: PACKAGES .. line missing in $file\n",next unless $type;
-    push @{$list{$type}}, split if $doit;
-    $types{$type}=1 if $doit;   # remember which types are used in package_config
+    next if ! $doit;
+    if ($type ne $last_type) {
+      push @actions, [ $type, [ split ] ];
+      $item_list = \@{$actions[-1][1]};
+      $last_type = $type;
+    }
+    else { push( @$item_list, split ) }
   }
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -508,11 +542,9 @@ sub setdownloadonly {
 # we are using a variable from %ENV
 # for debugging remove >/dev/null and -q
 
-undef @commands;
 undef %command;
 
 $maxpl=9999;
-@commands = qw/taskinst cupt cupt-r aptitude aptitude-r install unpack/;
 %command = (
           "install" => "apt-get $qopt -d $ENV{aptoptions} -y --fix-missing install",
          "taskinst" => "aptitude -d $ENV{aptoptions} -y install $devnull",
