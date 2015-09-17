@@ -1,3 +1,9 @@
+fai (4.1~lhm8) tramp; urgency=low
+
+  * Change install_packages semantics
+
+ -- Jan-Marek Glogowski <jan-marek.glogowski@muenchen.de>  Fri, 24 Jan 2014 16:28:39 +0100
+
 fai (4.1~lhm7) tramp; urgency=low
 
   * Divert /sbin/initctl for installs with Upstart.
