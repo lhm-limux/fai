@@ -128,7 +128,7 @@ bashismcheck:
 			test -r $${SCRIPT} || continue ; \
 			ec=0 ; \
 			checkbashisms -x $${SCRIPT} || ec=$$? ; \
-			if [ $${ec} -ne 0 ] && [ $${ec} -ne 2 ] ; then exit $${ec} ; fi ; \
+			if [ $${ec} -ne 0 ] && [ $${ec} -ne 2 ] && [ $${ec} -ne 4 ] ; then exit $${ec} ; fi ; \
 			echo -n "."; \
 		done; \
 		echo " done."; \
