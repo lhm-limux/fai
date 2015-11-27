@@ -1,3 +1,11 @@
+fai (4.1~lhm11) wanderer; urgency=medium
+
+  * Skipped lhm10 to avoid DAK problems.
+  * Perl script install_packages now honors the environment var. ROOTCMD and sets 
+    a default if not existing.
+
+ -- Michael Greulich <externer.dl.greulich@muenchen.de>  Fri, 27 Nov 2015 14:11:23 +0100
+
 fai (4.1~lhm9) wanderer; urgency=medium
 
   * Rebuild for wanderer

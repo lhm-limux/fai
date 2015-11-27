@@ -29,7 +29,7 @@
 
 $0=~ s#.+/##; # remove path from program name
 
-# import variables: $verbose, $MAXPACKAGES, $classes, $FAI, $FAI_ROOT, $aptoptions, $FAI_DEBSOURCESDIR
+# import variables: $verbose, $MAXPACKAGES, $classes, $FAI, $FAI_ROOT, $ROOTCMD, $aptoptions, $FAI_DEBSOURCESDIR
 
 use strict;
 use Getopt::Std;
@@ -119,7 +119,7 @@ my $devnull=">/dev/null" unless $verbose;
 
 $FAI_ROOT = $ENV{FAI_ROOT};
 $classpath = $opt_p || "$ENV{FAI}/package_config";
-$rootcmd = ($FAI_ROOT eq "/" ) ? '' : "chroot $FAI_ROOT";
+$rootcmd = (exists $ENV{ROOTCMD}) ? $ENV{ROOTCMD} : (($FAI_ROOT eq "/" ) ? '' : "chroot $FAI_ROOT");
 @classes = grep { !/^#|^\s*$/ } split(/[\s\n]+/,$ENV{classes});
 %classisdef = map { $_ => undef } @classes;
 
